@@ -12,11 +12,12 @@ import {
   ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
+import { router, useLocalSearchParams } from 'expo-router';
 
 const Auth = () => {
   const [loginWithEmail, setLoginWithEmail] = useState(false);
@@ -91,7 +92,10 @@ const Auth = () => {
                   backgroundColor: 'rgba(255,255,255,0.1)',
                 }}
               />
-              <TouchableOpacity className='bg-[#FFB900] rounded-lg py-3 px-6 mb-4'>
+              <TouchableOpacity
+                className='bg-[#FFB900] rounded-lg py-3 px-6 mb-4'
+                onPress={() => router.navigate('/(auth)/verifyWithOTP')}
+              >
                 <Text className='text-center font-semibold'>SEND OTP</Text>
               </TouchableOpacity>
               <View className='flex-row items-center mb-4'>
