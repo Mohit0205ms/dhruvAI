@@ -28,7 +28,7 @@ export const icons = {
   chat: chatIcon,
   profile: profileIcon,
   bell: bellIcon,
-  robot: robotIcon
+  robot: robotIcon,
 }
 
 export const zodiacSign = {
