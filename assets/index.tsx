@@ -10,6 +10,7 @@ import homeIcon from './icons/home.png';
 import chatIcon from './icons/chat.png';
 import profileIcon from './icons/account.png';
 import bellIcon from './icons/bell.png';
+import robotIcon from './icons/robot.png';
 
 // zodiac sign
 import leoIcon from './icons/zodiacSign/leo.png';
@@ -27,6 +28,7 @@ export const icons = {
   chat: chatIcon,
   profile: profileIcon,
   bell: bellIcon,
+  robot: robotIcon
 }
 
 export const zodiacSign = {

@@ -1,5 +1,6 @@
 import { icons } from '@/assets';
 import Quadrant from '@/assets/svgs/quadrant';
+import AskMeAnything from '@/components/AskMeAnything';
 import DailyHoroScope from '@/components/DailyHoroScope';
 import { Image, Text, Touchable, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -36,6 +37,7 @@ const Home = () => {
         <Text className='font-bold text-2xl'>Daily HoroScope</Text>
       </View>
       <DailyHoroScope />
+      <AskMeAnything/>
     </SafeAreaView>
   );
 };
