@@ -31,6 +31,9 @@ const Auth = () => {
     if (otpString.length === 4) {
       // Here you would typically verify the OTP with your backend
       console.log('Verifying OTP:', otpString);
+      router.replace({
+        pathname: '/(tabs)/home'
+      })
       // For now, just log it. You can add navigation or API call here
     } else {
       console.log('Please enter complete OTP');

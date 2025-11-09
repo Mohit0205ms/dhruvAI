@@ -23,7 +23,11 @@ const Auth = () => {
   const [loginWithEmail, setLoginWithEmail] = useState(false);
 
   const insets = useSafeAreaInsets();
-
+  useEffect(() => {
+    setTimeout(() => {
+      router.replace('/(tabs)/home');
+    }, 0);
+  }, []);
   return (
     <SafeAreaView className='flex-1'>
       <KeyboardAvoidingView

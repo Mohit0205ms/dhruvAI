@@ -5,7 +5,14 @@ import verify_otp_image from './images/verify_otp.png';
 
 // Icons
 import mailIcon from './icons/mail.png';
-import mobileIcon from './icons/mobile.png'
+import mobileIcon from './icons/mobile.png';
+import homeIcon from './icons/home.png';
+import chatIcon from './icons/chat.png';
+import profileIcon from './icons/account.png';
+import bellIcon from './icons/bell.png';
+
+// zodiac sign
+import leoIcon from './icons/zodiacSign/leo.png';
 
 export const images = {
   loginWithNumber: login_with_number_image,
@@ -15,5 +22,13 @@ export const images = {
 
 export const icons = {
   mail: mailIcon,
-  mobile: mobileIcon
+  mobile: mobileIcon,
+  home: homeIcon,
+  chat: chatIcon,
+  profile: profileIcon,
+  bell: bellIcon,
+}
+
+export const zodiacSign = {
+  leo: leoIcon
 }
