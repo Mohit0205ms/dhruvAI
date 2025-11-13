@@ -1,15 +1,18 @@
 import { icons } from '@/assets';
 import Quadrant from '@/assets/svgs/quadrant';
 import AskMeAnything from '@/components/AskMeAnything';
+import CompatibilityCard from '@/components/CompatibilityCard';
 import DailyHoroScope from '@/components/DailyHoroScope';
+import PalmReadCard from '@/components/PalmReadCard';
 import ProblemCategories from '@/components/ProblemCategories';
+import ShareHoroscopeCard from '@/components/ShareHoroscopeCard';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Home = () => {
   return (
-    <SafeAreaView className='flex-1'>
+    <SafeAreaView className='flex-1 bg-white'>
       {/* First Quadrant  */}
       <ScrollView>
         <View className='relative'>
@@ -35,6 +38,9 @@ const Home = () => {
         <DailyHoroScope />
         <AskMeAnything />
         <ProblemCategories />
+        <CompatibilityCard/>
+        <PalmReadCard/>
+        <ShareHoroscopeCard/>
       </ScrollView>
     </SafeAreaView>
   );
