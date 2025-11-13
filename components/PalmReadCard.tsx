@@ -1,9 +1,16 @@
 import { Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 
 const PalmReadCard = () => {
+  const router = useRouter();
+
+  const handlePress = () => {
+    router.push('/palm-reading');
+  }
+
   return (
-    <TouchableOpacity className='px-4 mt-4'>
+    <TouchableOpacity className='px-4 mt-4' onPress={handlePress}>
       <View className='rounded-2xl overflow-hidden'>
         <LinearGradient colors={['#0F172A', '#1E3A8A']}>
           <View className='w-full rounded-2xl px-6 py-4 shadow-xl flex-row items-center'>
