@@ -1,10 +1,6 @@
-/**
- * Advanced Palm Reading Interpreter based on Vedic Palmistry
- * This module provides comprehensive interpretations of palm lines, mounts, and features
- * according to traditional Vedic astrology and palmistry principles.
- *
- * Designed for scalability and service-oriented architecture.
- */
+// app/api/palm-reading/route.ts
+// Single-file advanced palmistry interpreter (TypeScript, Expo Router)
+// Tone 2: Confident, Direct, Clear. Detail level B (4–6 sentences each).
 
 export interface Point {
   x: number;
@@ -23,54 +19,58 @@ export interface PalmPrediction {
   detection_id: string;
 }
 
-export interface LineAnalysis {
-  strength: 'weak' | 'moderate' | 'strong';
-  length: number;
+type Strength = 'weak' | 'moderate' | 'strong';
+type Guna = 'sattva' | 'rajas' | 'tamas';
+
+interface LineAnalysis {
+  strength: Strength;
+  lengthPx: number;
+  normalizedLength: number;
   curvature: number;
   clarity: number;
-  interpretation: string;
-  vedicSignificance: string;
-  score: number; // 0-100 scale
-}
-
-export interface MountAnalysis {
-  development: 'underdeveloped' | 'balanced' | 'overdeveloped';
-  influence: string;
-  planetaryRuler: string;
-  characteristics: string[];
+  breaks: number;
+  forks: number;
+  islands: number;
   score: number;
+  interpretation: string;
+  rawPointsCount: number;
 }
 
-export interface FingerAnalysis {
-  length: number;
+interface MountAnalysis {
+  development: 'underdeveloped' | 'balanced' | 'overdeveloped';
+  score: number;
+  characteristics: string[];
+  planetaryRuler: string;
+}
+interface FingerAnalysis {
+  lengthPx: number;
+  lengthRatio: number;
   flexibility: number;
   alignment: number;
+  type: 'short' | 'average' | 'long';
   significance: string;
   score: number;
 }
 
-export interface HealthIndicators {
+interface HealthIndicators {
   overall: number;
   physical: string[];
   mental: string[];
   recommendations: string[];
 }
-
-export interface CareerInsights {
+interface CareerInsights {
   suitableCareers: string[];
   strengths: string[];
   challenges: string[];
   planetaryInfluences: string;
 }
-
-export interface RelationshipInsights {
+interface RelationshipInsights {
   compatibility: number;
   relationshipStyle: string;
   challenges: string[];
   recommendations: string[];
 }
-
-export interface SpiritualProfile {
+interface SpiritualProfile {
   kundalini: number;
   chakraBalance: Record<string, number>;
   spiritualPath: string;
@@ -78,39 +78,22 @@ export interface SpiritualProfile {
 }
 
 export interface PalmReadingResult {
-  // Basic Information
   analysisId: string;
   timestamp: string;
   confidence: number;
-
-  // Physical Characteristics
   handShape: string;
   handSize: string;
   skinTexture: string;
-
-  // Major Lines
-  lifeLine: LineAnalysis;
-  heartLine: LineAnalysis;
-  headLine: LineAnalysis;
+  lifeLine: LineAnalysis & { vedicSignificance: string };
+  heartLine: LineAnalysis & { vedicSignificance: string };
+  headLine: LineAnalysis & { vedicSignificance: string };
   fateLine: {
     presence: boolean;
-    analysis?: LineAnalysis;
+    analysis?: LineAnalysis & { vedicSignificance: string };
   };
-  marriageLine: {
-    count: number;
-    quality: string;
-    interpretation: string;
-  };
-  sunLine: {
-    presence: boolean;
-    analysis?: LineAnalysis;
-  };
-  mercuryLine: {
-    presence: boolean;
-    analysis?: LineAnalysis;
-  };
-
-  // Mounts Analysis
+  marriageLine: { count: number; quality: string; interpretation: string };
+  sunLine: { presence: boolean; analysis?: LineAnalysis };
+  mercuryLine: { presence: boolean; analysis?: LineAnalysis };
   mounts: {
     venus: MountAnalysis;
     mars: MountAnalysis;
@@ -120,8 +103,6 @@ export interface PalmReadingResult {
     moon: MountAnalysis;
     sun: MountAnalysis;
   };
-
-  // Finger Analysis
   fingers: {
     thumb: FingerAnalysis;
     index: FingerAnalysis;
@@ -129,22 +110,17 @@ export interface PalmReadingResult {
     ring: FingerAnalysis;
     pinky: FingerAnalysis;
   };
-
-  // Derived Insights
   personality: {
     overall: string;
     traits: string[];
-    dominantGuna: 'sattva' | 'rajas' | 'tamas';
+    dominantGuna: Guna;
     strengths: string[];
     weaknesses: string[];
   };
-
   health: HealthIndicators;
   career: CareerInsights;
   relationships: RelationshipInsights;
   spirituality: SpiritualProfile;
-
-  // Vedic Correlations
   vedicInsights: {
     rulingPlanet: string;
     element: 'fire' | 'earth' | 'air' | 'water';
@@ -152,655 +128,926 @@ export interface PalmReadingResult {
     chakraAlignment: string;
     karmicLessons: string[];
   };
-
-  // Recommendations
   recommendations: {
     immediate: string[];
     shortTerm: string[];
     longTerm: string[];
     spiritual: string[];
   };
-
-  // Service Metadata
   version: string;
   modelUsed: string;
   processingTime: number;
 }
 
-/**
- * Calculates the Euclidean distance between two points
- */
-function distance(p1: Point, p2: Point): number {
-  return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+/* ====== Utilities ====== */
+function clamp(v: number, lo = 0, hi = 1) {
+  return Math.max(lo, Math.min(hi, v));
 }
-
-/**
- * Finds the bounding box of the palm from points
- */
-function getPalmBounds(points: Point[]): { minX: number; maxX: number; minY: number; maxY: number } {
-  const xs = points.map(p => p.x);
-  const ys = points.map(p => p.y);
+function randChoice(arr: string[]) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+function mean(nums: number[]) {
+  return nums.length === 0 ? 0 : nums.reduce((a, b) => a + b, 0) / nums.length;
+}
+function variance(nums: number[]) {
+  if (nums.length === 0) return 0;
+  const m = mean(nums);
+  return mean(nums.map((n) => (n - m) ** 2));
+}
+function bbox(points: Point[]) {
+  const xs = points.map((p) => p.x),
+    ys = points.map((p) => p.y);
+  const minX = Math.min(...xs),
+    maxX = Math.max(...xs),
+    minY = Math.min(...ys),
+    maxY = Math.max(...ys);
+  const width = Math.max(1, maxX - minX),
+    height = Math.max(1, maxY - minY);
   return {
-    minX: Math.min(...xs),
-    maxX: Math.max(...xs),
-    minY: Math.min(...ys),
-    maxY: Math.max(...ys)
+    minX,
+    maxX,
+    minY,
+    maxY,
+    width,
+    height,
+    centerX: (minX + maxX) / 2,
+    centerY: (minY + maxY) / 2,
   };
 }
 
-/**
- * Analyzes the life line based on Vedic principles
- */
-function analyzeLifeLine(points: Point[], bounds: any): LineAnalysis {
-  // Life line typically runs from between thumb and index finger down to wrist
-  // In Vedic palmistry, a strong life line indicates vitality and longevity
+/* ====== Line analysis core ====== */
+const LINE_LENGTH_WEIGHT = 0.45,
+  CURVATURE_WEIGHT = 0.3,
+  CLARITY_WEIGHT = 0.25,
+  BREAK_PENALTY = 0.02;
 
-  const palmHeight = bounds.maxY - bounds.minY;
-  const palmWidth = bounds.maxX - bounds.minX;
-
-  // Approximate life line length (this is a simplified analysis)
-  const lifeLineLength = palmHeight * 0.7; // Estimated based on typical palm proportions
-  const curvature = Math.random() * 0.5 + 0.5; // Simulated curvature analysis
-  const clarity = Math.random() * 0.4 + 0.6; // Simulated clarity
-
-  let strength: 'weak' | 'moderate' | 'strong' = 'moderate';
-  let interpretation = '';
-  let vedicSignificance = '';
-  let score = 50;
-
-  if (lifeLineLength > palmHeight * 0.8) {
-    strength = 'strong';
-    score = 85;
-    interpretation = 'You possess excellent vitality and strong life force. According to Vedic principles, this indicates good health, longevity, and resilience.';
-    vedicSignificance = 'Strong prana (life force) flow, indicating balanced doshas and good karmic health.';
-  } else if (lifeLineLength > palmHeight * 0.6) {
-    strength = 'moderate';
-    score = 65;
-    interpretation = 'Your life force is balanced. You have good health but should maintain wellness practices for optimal vitality.';
-    vedicSignificance = 'Moderate prana flow, suggesting need for regular pranayama and Ayurvedic routines.';
-  } else {
-    strength = 'weak';
-    score = 35;
-    interpretation = 'Your life line suggests you need to focus on health and vitality. Consider Ayurvedic practices and lifestyle adjustments.';
-    vedicSignificance = 'Weak prana flow, indicating need for detoxification and spiritual healing practices.';
+function computeCurvature(
+  sorted: Point[],
+  orientation: 'horizontal' | 'vertical',
+  boxSize: number,
+) {
+  if (sorted.length < 3) return 0.5;
+  const start = sorted[0],
+    end = sorted[sorted.length - 1],
+    mid = sorted[Math.floor(sorted.length / 2)];
+  const expectedMid =
+    orientation === 'horizontal'
+      ? (start.y + end.y) / 2
+      : (start.x + end.x) / 2;
+  const actualMid = orientation === 'horizontal' ? mid.y : mid.x;
+  return clamp(
+    1 - Math.abs(actualMid - expectedMid) / Math.max(boxSize * 0.03, 1),
+    0.1,
+    0.95,
+  );
+}
+function detectBreaks(sorted: Point[], axis: 'x' | 'y', thresholdGap: number) {
+  if (sorted.length < 2) return 0;
+  let br = 0;
+  for (let i = 1; i < sorted.length; i++) {
+    const gap = Math.abs(
+      (sorted as any)[i][axis] - (sorted as any)[i - 1][axis],
+    );
+    if (gap > thresholdGap) br++;
   }
-
+  return br;
+}
+function analyzeLine(
+  points: Point[],
+  box: ReturnType<typeof bbox>,
+  orientation: 'horizontal' | 'vertical' = 'horizontal',
+): LineAnalysis {
+  if (!points || points.length === 0)
+    return {
+      strength: 'weak',
+      lengthPx: 0,
+      normalizedLength: 0,
+      curvature: 0.5,
+      clarity: 0.2,
+      breaks: 0,
+      forks: 0,
+      islands: 0,
+      score: 30,
+      interpretation: 'No clear line detected.',
+      rawPointsCount: 0,
+    };
+  const sorted = [...points].sort((a, b) =>
+    orientation === 'horizontal' ? a.x - b.x : a.y - b.y,
+  );
+  const lengthPx =
+    orientation === 'horizontal'
+      ? Math.max(...points.map((p) => p.x)) -
+        Math.min(...points.map((p) => p.x))
+      : Math.max(...points.map((p) => p.y)) -
+        Math.min(...points.map((p) => p.y));
+  const normalizedLength =
+    orientation === 'horizontal' ? lengthPx / box.width : lengthPx / box.height;
+  const curvature = computeCurvature(
+    sorted,
+    orientation,
+    orientation === 'horizontal' ? box.height : box.width,
+  );
+  const density = points.length / Math.max(lengthPx, 1);
+  const clarity = clamp(density * 6, 0.12, 0.99);
+  const axis = orientation === 'horizontal' ? 'x' : 'y';
+  const thresholdGap =
+    (orientation === 'horizontal' ? box.width : box.height) * 0.06;
+  const breaks = detectBreaks(sorted, axis as any, thresholdGap);
+  const orthos =
+    orientation === 'horizontal'
+      ? points.map((p) => p.y)
+      : points.map((p) => p.x);
+  const orthov = variance(orthos);
+  const forks =
+    orthov >
+    (orientation === 'horizontal' ? box.height * 0.02 : box.width * 0.02)
+      ? 1
+      : 0;
+  const islands = Math.max(0, breaks);
+  const rawScore =
+    (normalizedLength * LINE_LENGTH_WEIGHT +
+      curvature * CURVATURE_WEIGHT +
+      clarity * CLARITY_WEIGHT -
+      breaks * BREAK_PENALTY) *
+    100;
+  const score = Math.round(clamp(rawScore, 0, 100));
+  const strength: Strength =
+    score >= 75 ? 'strong' : score >= 55 ? 'moderate' : 'weak';
+  // Interpretation placeholder: will be expanded in final summary
+  const interpretation =
+    strength === 'strong'
+      ? 'Strong and clear.'
+      : strength === 'moderate'
+      ? 'Moderate and reliable.'
+      : 'Weak or fragmented.';
   return {
     strength,
-    length: lifeLineLength,
+    lengthPx,
+    normalizedLength,
     curvature,
     clarity,
+    breaks,
+    forks,
+    islands,
+    score,
     interpretation,
-    vedicSignificance,
-    score
+    rawPointsCount: points.length,
   };
 }
 
-/**
- * Analyzes the heart line based on Vedic principles
- */
-function analyzeHeartLine(points: Point[], bounds: any): LineAnalysis {
-  const palmWidth = bounds.maxX - bounds.minX;
-  const heartLineLength = palmWidth * 0.8;
-  const curvature = Math.random() * 0.3 + 0.7;
-  const clarity = Math.random() * 0.4 + 0.6;
+/* ====== Domain wrappers ====== */
+function analyzeLifeLine(points: Point[], box: ReturnType<typeof bbox>) {
+  const candidates = points.filter(
+    (p) =>
+      p.x < box.centerX &&
+      p.y > box.minY + box.height * 0.12 &&
+      p.y < box.maxY - box.height * 0.04,
+  );
+  return analyzeLine(candidates, box, 'vertical');
+}
+function analyzeHeadLine(points: Point[], box: ReturnType<typeof bbox>) {
+  const y = box.minY + box.height * 0.45;
+  const candidates = points.filter(
+    (p) =>
+      Math.abs(p.y - y) < box.height * 0.07 &&
+      p.x > box.minX + box.width * 0.12 &&
+      p.x < box.maxX - box.width * 0.12,
+  );
+  return analyzeLine(candidates, box, 'horizontal');
+}
+function analyzeHeartLine(points: Point[], box: ReturnType<typeof bbox>) {
+  const y = box.minY + box.height * 0.27;
+  const candidates = points.filter(
+    (p) =>
+      Math.abs(p.y - y) < box.height * 0.07 &&
+      p.x > box.minX + box.width * 0.08 &&
+      p.x < box.maxX - box.width * 0.08,
+  );
+  return analyzeLine(candidates, box, 'horizontal');
+}
+function analyzeFateLine(points: Point[], box: ReturnType<typeof bbox>) {
+  const candidates = points.filter(
+    (p) =>
+      Math.abs(p.x - box.centerX) < box.width * 0.12 &&
+      p.y > box.minY + box.height * 0.12 &&
+      p.y < box.maxY - box.height * 0.05,
+  );
+  return analyzeLine(candidates, box, 'vertical');
+}
 
-  let strength: 'weak' | 'moderate' | 'strong' = 'moderate';
-  let interpretation = '';
-  let vedicSignificance = '';
-  let score = 50;
-
-  if (heartLineLength > palmWidth * 0.9) {
-    strength = 'strong';
-    score = 85;
-    interpretation = 'You have a deep capacity for love and emotional connection. This indicates strong relationships and emotional intelligence.';
-    vedicSignificance = 'Strong Anahata (heart) chakra activation, indicating balanced emotions and loving nature.';
-  } else if (heartLineLength > palmWidth * 0.7) {
-    strength = 'moderate';
-    score = 65;
-    interpretation = 'Your emotional nature is balanced. You form meaningful relationships and have good emotional awareness.';
-    vedicSignificance = 'Moderate heart chakra development, suggesting need for emotional healing practices.';
-  } else {
-    strength = 'weak';
-    score = 35;
-    interpretation = 'You may experience emotional challenges. Focus on heart chakra practices and emotional healing.';
-    vedicSignificance = 'Blocked heart chakra, indicating need for emotional healing and compassion practices.';
-  }
-
+/* ====== Mount analysis ====== */
+function analyzeMounts(points: Point[], box: ReturnType<typeof bbox>) {
+  const { minX, maxX, minY, maxY, width, height } = box;
+  const regionCount = (x0: number, x1: number, y0: number, y1: number) =>
+    points.filter((p) => p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1)
+      .length;
+  const venusCount = regionCount(
+    minX,
+    minX + width * 0.28,
+    minY + height * 0.6,
+    maxY,
+  );
+  const jupiterCount = regionCount(
+    minX + width * 0.08,
+    minX + width * 0.32,
+    minY,
+    minY + height * 0.35,
+  );
+  const saturnCount = regionCount(
+    minX + width * 0.32,
+    minX + width * 0.52,
+    minY,
+    minY + height * 0.4,
+  );
+  const sunCount = regionCount(
+    minX + width * 0.52,
+    minX + width * 0.74,
+    minY,
+    minY + height * 0.4,
+  );
+  const mercuryCount = regionCount(
+    minX + width * 0.7,
+    maxX,
+    minY + height * 0.56,
+    maxY,
+  );
+  const moonCount = regionCount(
+    minX + width * 0.56,
+    maxX,
+    minY + height * 0.48,
+    maxY,
+  );
+  const marsCount = regionCount(
+    minX + width * 0.25,
+    minX + width * 0.45,
+    minY + height * 0.5,
+    minY + height * 0.85,
+  );
+  const total = Math.max(1, points.length);
+  const normalize = (c: number) => clamp((c / total) * 160, 8, 96);
+  const make = (ruler: string, score: number, defaults: string[]) => {
+    const development =
+      score > 78 ? 'overdeveloped' : score > 60 ? 'balanced' : 'underdeveloped';
+    const chars = defaults.slice();
+    if (score > 82) chars.push('Prominent influence');
+    return {
+      development,
+      score: Math.round(score),
+      characteristics: chars,
+      planetaryRuler: ruler,
+    } as MountAnalysis;
+  };
   return {
-    strength,
-    length: heartLineLength,
-    curvature,
-    clarity,
-    interpretation,
-    vedicSignificance,
-    score
+    venus: make('Venus (Shukra)', normalize(venusCount), [
+      'Artistic',
+      'Affectionate',
+    ]),
+    mars: make('Mars (Mangal)', normalize(marsCount), [
+      'Courageous',
+      'Energetic',
+    ]),
+    jupiter: make('Jupiter (Guru)', normalize(jupiterCount), [
+      'Leadership',
+      'Optimistic',
+    ]),
+    saturn: make('Saturn (Shani)', normalize(saturnCount), [
+      'Disciplined',
+      'Patient',
+    ]),
+    mercury: make('Mercury (Budha)', normalize(mercuryCount), [
+      'Communicative',
+      'Adaptable',
+    ]),
+    moon: make('Moon (Chandra)', normalize(moonCount), [
+      'Intuitive',
+      'Imaginative',
+    ]),
+    sun: make('Sun (Surya)', normalize(sunCount), ['Expressive', 'Creative']),
   };
 }
 
-/**
- * Analyzes the head line based on Vedic principles
- */
-function analyzeHeadLine(points: Point[], bounds: any): LineAnalysis {
-  const palmWidth = bounds.maxX - bounds.minX;
-  const headLineLength = palmWidth * 0.75;
-  const curvature = Math.random() * 0.4 + 0.6;
-  const clarity = Math.random() * 0.4 + 0.6;
-
-  let strength: 'weak' | 'moderate' | 'strong' = 'moderate';
-  let interpretation = '';
-  let vedicSignificance = '';
-  let score = 50;
-
-  if (headLineLength > palmWidth * 0.85) {
-    strength = 'strong';
-    score = 85;
-    interpretation = 'You possess excellent intellect and wisdom. This indicates strong mental capacity and learning ability.';
-    vedicSignificance = 'Strong Ajna (third eye) chakra influence, indicating high intelligence and wisdom.';
-  } else if (headLineLength > palmWidth * 0.65) {
-    strength = 'moderate';
-    score = 65;
-    interpretation = 'Your mental faculties are well-balanced. You have good reasoning and analytical skills.';
-    vedicSignificance = 'Balanced mental energy, suggesting good concentration and learning capacity.';
-  } else {
-    strength = 'weak';
-    score = 35;
-    interpretation = 'You may benefit from mental exercises and meditation to strengthen your intellectual capacity.';
-    vedicSignificance = 'Weak mental energy, indicating need for meditation and mental discipline practices.';
+/* ====== Micro features, fingers, sun/mercury/marriage (helpers) ====== */
+function detectMicroFeatures(points: Point[], box: ReturnType<typeof bbox>) {
+  const gridX = 6,
+    gridY = 6;
+  const cellW = box.width / gridX,
+    cellH = box.height / gridY;
+  const grid: number[][] = Array.from({ length: gridY }, () =>
+    Array(gridX).fill(0),
+  );
+  for (const p of points) {
+    const gx = Math.min(
+      gridX - 1,
+      Math.max(0, Math.floor((p.x - box.minX) / cellW)),
+    );
+    const gy = Math.min(
+      gridY - 1,
+      Math.max(0, Math.floor((p.y - box.minY) / cellH)),
+    );
+    grid[gy][gx]++;
   }
-
+  let dense = 0,
+    isolated = 0;
+  for (let y = 0; y < gridY; y++)
+    for (let x = 0; x < gridX; x++) {
+      if (grid[y][x] >= 6) dense++;
+      if (grid[y][x] > 0 && grid[y][x] <= 2) isolated++;
+    }
   return {
-    strength,
-    length: headLineLength,
-    curvature,
-    clarity,
-    interpretation,
-    vedicSignificance,
-    score
+    islands: Math.round(isolated / 2),
+    stars: dense >= 2 ? Math.min(4, dense) : 0,
+    crosses: Math.round(dense / 3),
+    branches: Math.round(dense / 2),
+    denseCells: dense,
+    isolatedCells: isolated,
   };
 }
-
-/**
- * Analyzes the fate line presence and strength
- */
-function analyzeFateLine(points: Point[], bounds: any): { presence: boolean; analysis?: LineAnalysis } {
-  const palmHeight = bounds.maxY - bounds.minY;
-  const centerX = (bounds.minX + bounds.maxX) / 2;
-
-  const verticalPoints = points.filter(p => Math.abs(p.x - centerX) < palmHeight * 0.1);
-  const presence = verticalPoints.length > palmHeight * 0.3;
-
-  if (presence) {
-    const strength: 'weak' | 'moderate' | 'strong' = verticalPoints.length > palmHeight * 0.5 ? 'strong' : 'moderate';
-    const score = strength === 'strong' ? 80 : 60;
-
+function analyzeFingers(points: Point[], box: ReturnType<typeof bbox>) {
+  const regionW = box.width / 6;
+  const tops: number[] = [];
+  for (let i = 0; i < 5; i++) {
+    const x0 = box.minX + regionW * (i + 0.5);
+    const cand = points.filter(
+      (p) => p.x >= x0 - regionW / 1.1 && p.x <= x0 + regionW / 1.1,
+    );
+    tops.push(cand.length === 0 ? box.maxY : Math.min(...cand.map((c) => c.y)));
+  }
+  const palmBottom = box.maxY;
+  const fingerLens = tops.map((y) => Math.max(0, palmBottom - y));
+  const meanLen = Math.max(1, mean(fingerLens));
+  const [thumb, index, middle, ring, pinky] = fingerLens;
+  const make = (n: number, label: string) => {
+    const ratio = n / meanLen;
+    const type: FingerAnalysis['type'] =
+      ratio > 1.1 ? 'long' : ratio < 0.9 ? 'short' : 'average';
+    const score = Math.round(clamp(ratio, 0.2, 1.4) * 70);
+    const sig = `${label} finger: ${type}.`;
     return {
-      presence: true,
-      analysis: {
-        strength,
-        length: verticalPoints.length,
-        curvature: 0.8,
-        clarity: 0.7,
-        interpretation: strength === 'strong'
-          ? 'Your fate line is prominent, indicating a clear life purpose and strong destiny. You are guided by dharma.'
-          : 'Your fate line is present but moderate, suggesting a balanced approach to life\'s journey with some flexibility in destiny.',
-        vedicSignificance: 'Strong karmic line indicating life purpose and dharma alignment.',
-        score
-      }
+      lengthPx: n,
+      lengthRatio: Math.round(ratio * 100) / 100,
+      flexibility: 0.7,
+      alignment: 0.85,
+      type,
+      significance: sig,
+      score,
     };
-  } else {
-    return {
-      presence: false
-    };
-  }
+  };
+  return {
+    thumb: make(thumb, 'Thumb'),
+    index: make(index, 'Index'),
+    middle: make(middle, 'Middle'),
+    ring: make(ring, 'Ring'),
+    pinky: make(pinky, 'Pinky'),
+  };
+}
+function analyzeSunLine(points: Point[], box: ReturnType<typeof bbox>) {
+  const region = points.filter(
+    (p) =>
+      p.x > box.minX + box.width * 0.48 &&
+      p.x < box.maxX - box.width * 0.06 &&
+      p.y > box.minY + box.height * 0.28 &&
+      p.y < box.maxY - box.height * 0.15,
+  );
+  if (region.length < 5) return { presence: false } as const;
+  const sorted = [...region].sort((a, b) => a.x - b.x);
+  let slope = 0;
+  for (let i = 1; i < sorted.length; i++)
+    slope +=
+      (sorted[i].y - sorted[i - 1].y) /
+      Math.max(1, sorted[i].x - sorted[i - 1].x);
+  const avg = slope / Math.max(1, sorted.length - 1);
+  const diag = Math.abs(avg) > 0.2;
+  const lengthPx =
+    Math.max(...region.map((p) => p.y)) - Math.min(...region.map((p) => p.y));
+  const clarity = clamp((region.length / Math.max(lengthPx, 1)) * 6, 0.2, 0.95);
+  const score = Math.round(
+    (clamp(lengthPx / box.height, 0, 1) * 0.6 + clarity * 0.4) * 100,
+  );
+  const strength: Strength =
+    score >= 75 ? 'strong' : score >= 55 ? 'moderate' : 'weak';
+  const interp =
+    strength === 'strong'
+      ? 'Visible and strong — likely recognition.'
+      : strength === 'moderate'
+      ? 'Visible — potential with effort.'
+      : 'Weak or absent.';
+  return {
+    presence: diag,
+    analysis: {
+      strength,
+      lengthPx,
+      normalizedLength: clamp(lengthPx / box.height, 0, 1),
+      curvature: 0.8,
+      clarity,
+      breaks: 0,
+      forks: 0,
+      islands: 0,
+      score,
+      interpretation: interp,
+      rawPointsCount: region.length,
+    } as LineAnalysis,
+  };
+}
+function analyzeMercuryLine(points: Point[], box: ReturnType<typeof bbox>) {
+  const region = points.filter(
+    (p) =>
+      p.x > box.maxX - box.width * 0.26 &&
+      p.y > box.minY + box.height * 0.2 &&
+      p.y < box.maxY - box.height * 0.08,
+  );
+  if (region.length < 4) return { presence: false } as const;
+  const sorted = [...region].sort((a, b) => a.y - b.y);
+  let cont = 0;
+  for (let i = 1; i < sorted.length; i++)
+    if (Math.abs(sorted[i].x - sorted[i - 1].x) < box.width * 0.03) cont++;
+  const presence = cont >= Math.max(1, Math.floor(sorted.length * 0.4));
+  const lengthPx =
+    Math.max(...sorted.map((p) => p.y)) - Math.min(...sorted.map((p) => p.y));
+  const clarity = clamp((cont / Math.max(1, sorted.length)) * 1.2, 0.2, 0.98);
+  const score = Math.round(
+    (clamp(lengthPx / box.height, 0, 1) * 0.5 + clarity * 0.5) * 100,
+  );
+  const strength: Strength =
+    score >= 75 ? 'strong' : score >= 55 ? 'moderate' : 'weak';
+  const interp =
+    strength === 'strong'
+      ? 'Clear Mercury line — strong communication.'
+      : strength === 'moderate'
+      ? 'Mercury line present — practical communication.'
+      : 'Mercury line weak or absent.';
+  return {
+    presence,
+    analysis: {
+      strength,
+      lengthPx,
+      normalizedLength: clamp(lengthPx / box.height, 0, 1),
+      curvature: 0.6,
+      clarity,
+      breaks: 0,
+      forks: 0,
+      islands: 0,
+      score,
+      interpretation: interp,
+      rawPointsCount: sorted.length,
+    } as LineAnalysis,
+  };
+}
+function analyzeMarriageLines(points: Point[], box: ReturnType<typeof bbox>) {
+  const yBase = box.minY + box.height * 0.2;
+  const cand = points.filter(
+    (p) =>
+      p.x > box.maxX - box.width * 0.28 &&
+      Math.abs(p.y - yBase) < box.height * 0.06,
+  );
+  const ys = Array.from(new Set(cand.map((p) => Math.round(p.y))));
+  const count = Math.min(4, Math.max(0, ys.length));
+  const quality =
+    count >= 2 ? 'harmonious' : count === 1 ? 'balanced' : 'challenging';
+  const interp =
+    count > 0
+      ? `Detected ${count} marriage line(s) — ${quality}.`
+      : 'No clear marriage lines detected.';
+  return { count, quality, interpretation: interp };
 }
 
-/**
- * Analyzes the mounts based on Vedic principles
- */
-function analyzeMounts(points: Point[], bounds: any): PalmReadingResult['mounts'] {
-  const palmHeight = bounds.maxY - bounds.minY;
-  const palmWidth = bounds.maxX - bounds.minX;
-
-  // Venus mount (base of thumb) - love, beauty, harmony
-  const venus: MountAnalysis = {
-    development: 'balanced',
-    influence: 'Love, beauty, creativity, and sensual pleasure',
-    planetaryRuler: 'Venus (Shukra)',
-    characteristics: ['Artistic', 'Romantic', 'Harmonious', 'Creative'],
-    score: 75
-  };
-
-  // Mars mounts - courage, energy
-  const mars: MountAnalysis = {
-    development: 'balanced',
-    influence: 'Courage, energy, and protective instincts',
-    planetaryRuler: 'Mars (Mangal)',
-    characteristics: ['Courageous', 'Energetic', 'Protective', 'Determined'],
-    score: 70
-  };
-
-  // Jupiter mount (under index finger) - wisdom, leadership
-  const jupiter: MountAnalysis = {
-    development: 'balanced',
-    influence: 'Wisdom, leadership, and spiritual growth',
-    planetaryRuler: 'Jupiter (Guru)',
-    characteristics: ['Wise', 'Leadership', 'Spiritual', 'Optimistic'],
-    score: 80
-  };
-
-  // Saturn mount (under middle finger) - discipline, spirituality
-  const saturn: MountAnalysis = {
-    development: 'balanced',
-    influence: 'Discipline, introspection, and spiritual depth',
-    planetaryRuler: 'Saturn (Shani)',
-    characteristics: ['Disciplined', 'Introspective', 'Spiritual', 'Patient'],
-    score: 75
-  };
-
-  // Mercury mount (under pinky) - communication, intellect
-  const mercury: MountAnalysis = {
-    development: 'balanced',
-    influence: 'Communication, intellect, and business acumen',
-    planetaryRuler: 'Mercury (Budha)',
-    characteristics: ['Communicative', 'Intelligent', 'Business-minded', 'Adaptable'],
-    score: 70
-  };
-
-  // Moon mount (outer palm) - intuition, emotions
-  const moon: MountAnalysis = {
-    development: 'balanced',
-    influence: 'Intuition, emotions, and imagination',
-    planetaryRuler: 'Moon (Chandra)',
-    characteristics: ['Intuitive', 'Emotional', 'Imaginative', 'Nurturing'],
-    score: 75
-  };
-
-  // Sun mount (under ring finger) - success, vitality
-  const sun: MountAnalysis = {
-    development: 'balanced',
-    influence: 'Success, vitality, and self-expression',
-    planetaryRuler: 'Sun (Surya)',
-    characteristics: ['Successful', 'Vital', 'Creative', 'Confident'],
-    score: 78
-  };
-
-  return { venus, mars, jupiter, saturn, mercury, moon, sun };
+/* ====== Vedic helpers ====== */
+function getDominantGuna(mounts: Record<string, MountAnalysis>): Guna {
+  const sattvaScore = (mounts.jupiter?.score || 0) + (mounts.sun?.score || 0);
+  const rajasScore = (mounts.mars?.score || 0) + (mounts.mercury?.score || 0);
+  const tamasScore = (mounts.saturn?.score || 0) + (mounts.moon?.score || 0);
+  if (sattvaScore >= rajasScore && sattvaScore >= tamasScore) return 'sattva';
+  if (rajasScore >= sattvaScore && rajasScore >= tamasScore) return 'rajas';
+  return 'tamas';
 }
 
-/**
- * Analyzes marriage lines based on Vedic principles
- */
-function analyzeMarriageLine(points: Point[], bounds: any): { count: number; quality: string; interpretation: string } {
-  // Marriage lines are typically found on the side of the palm near the Mercury mount
-  const marriageLineCount = Math.floor(Math.random() * 3) + 1; // Simulated analysis
-  const quality = marriageLineCount > 2 ? 'harmonious' : marriageLineCount > 1 ? 'balanced' : 'challenging';
-  const interpretation = `You have ${marriageLineCount} marriage line(s), indicating ${quality} relationship patterns in your life.`;
-
-  return { count: marriageLineCount, quality, interpretation };
+/* ====== High-level message generator (Tone 2, 4-6 sentences) ====== */
+function buildLineMessage(
+  lineName: string,
+  analysis: LineAnalysis,
+  simpleLabel: string,
+) {
+  // Tone 2: confident, direct, clear. 4-6 sentences.
+  const strengthText =
+    analysis.strength === 'strong'
+      ? `${lineName} is strong and well-defined.`
+      : analysis.strength === 'moderate'
+      ? `${lineName} is clear but not dominant.`
+      : `${lineName} is faint or broken in places.`;
+  const meaning =
+    analysis.strength === 'strong'
+      ? `This indicates a clear and reliable trait in the corresponding area.`
+      : analysis.strength === 'moderate'
+      ? `This suggests reasonable capability with occasional ups and downs.`
+      : `This suggests that this area may require more conscious effort.`;
+  const nuance =
+    analysis.breaks > 0
+      ? `There are ${analysis.breaks} small gaps detected — these usually mark temporary stress or transitions rather than permanent problems.`
+      : `No significant breaks are detected, which points to steady development.`;
+  const takeaway =
+    analysis.score >= 70
+      ? `Overall: this is a positive sign.`
+      : analysis.score >= 50
+      ? `Overall: manageable, with room to improve.`
+      : `Overall: focus on strengthening this area through practice and routines.`;
+  // Compose 4 sentences
+  return `${strengthText} ${meaning} ${nuance} ${takeaway}`;
 }
 
-/**
- * Analyzes sun line presence and strength
- */
-function analyzeSunLine(points: Point[], bounds: any): { presence: boolean; analysis?: LineAnalysis } {
-  // Sun line represents success and fame
-  const presence = Math.random() > 0.5;
-
-  if (presence) {
-    return {
-      presence: true,
-      analysis: {
-        strength: 'moderate',
-        length: bounds.maxX - bounds.minX * 0.6,
-        curvature: 0.7,
-        clarity: 0.8,
-        interpretation: 'Your sun line indicates potential for success and recognition in your chosen field.',
-        vedicSignificance: 'Strong solar influence suggesting leadership and creative success.',
-        score: 75
-      }
-    };
-  }
-  return { presence: false };
+/* ====== Derived generators (health/career/relationship/spiritual) - short and direct ====== */
+function generatePersonality(
+  life: LineAnalysis,
+  heart: LineAnalysis,
+  head: LineAnalysis,
+  mounts: Record<string, MountAnalysis>,
+  fatePresent: boolean,
+) {
+  const primary = Math.round((life.score + heart.score + head.score) / 3);
+  const mountList = Object.entries(mounts) as [string, MountAnalysis][];
+  const dom = mountList.sort((a, b) => b[1].score - a[1].score)[0];
+  const traits: Set<string> = new Set();
+  if (life.strength === 'strong') {
+    traits.add('Energetic');
+    traits.add('Resilient');
+  } else traits.add('Cautious');
+  if (head.strength === 'strong') {
+    traits.add('Analytical');
+    traits.add('Decisive');
+  } else traits.add('Practical');
+  if (heart.strength === 'strong') {
+    traits.add('Warm');
+    traits.add('Loyal');
+  } else traits.add('Reserved');
+  if (dom && dom[1].score > 70) traits.add(`${dom[0]}-oriented`);
+  const templates = [
+    `Direct summary: You are ${Array.from(traits)
+      .slice(0, 3)
+      .join(', ')} with about ${primary}% balance across the key areas.`,
+    `Quick read: Your palm shows ${Array.from(traits)
+      .slice(0, 3)
+      .join(', ')} tendencies and an overall score near ${primary}%.`,
+  ];
+  const overall = randChoice(templates);
+  const strengths = Array.from(traits);
+  const weaknesses: string[] = [];
+  if (life.strength !== 'strong')
+    weaknesses.push('Work on daily routines to improve vitality.');
+  if (head.strength !== 'strong')
+    weaknesses.push('Short focused practice to boost concentration.');
+  if (heart.strength !== 'strong')
+    weaknesses.push('Practice opening up in safe relationships.');
+  const dominantGuna = getDominantGuna(mounts);
+  return {
+    overall,
+    traits: Array.from(traits),
+    dominantGuna,
+    strengths,
+    weaknesses,
+  };
 }
 
-/**
- * Analyzes mercury line presence and strength
- */
-function analyzeMercuryLine(points: Point[], bounds: any): { presence: boolean; analysis?: LineAnalysis } {
-  // Mercury line represents communication and business
-  const presence = Math.random() > 0.4;
-
-  if (presence) {
-    return {
-      presence: true,
-      analysis: {
-        strength: 'moderate',
-        length: bounds.maxY - bounds.minY * 0.5,
-        curvature: 0.6,
-        clarity: 0.7,
-        interpretation: 'Your mercury line suggests strong communication skills and business acumen.',
-        vedicSignificance: 'Balanced Mercury influence indicating good intellect and adaptability.',
-        score: 70
-      }
-    };
-  }
-  return { presence: false };
-}
-
-/**
- * Analyzes finger characteristics
- */
-function analyzeFingers(bounds: any): PalmReadingResult['fingers'] {
-  const thumb: FingerAnalysis = {
-    length: bounds.maxY - bounds.minY * 0.3,
-    flexibility: 0.8,
-    alignment: 0.9,
-    significance: 'Strong thumb indicates willpower and determination.',
-    score: 80
-  };
-
-  const index: FingerAnalysis = {
-    length: bounds.maxY - bounds.minY * 0.35,
-    flexibility: 0.7,
-    alignment: 0.85,
-    significance: 'Index finger represents leadership and ambition.',
-    score: 75
-  };
-
-  const middle: FingerAnalysis = {
-    length: bounds.maxY - bounds.minY * 0.4,
-    flexibility: 0.75,
-    alignment: 0.9,
-    significance: 'Middle finger indicates responsibility and discipline.',
-    score: 78
-  };
-
-  const ring: FingerAnalysis = {
-    length: bounds.maxY - bounds.minY * 0.35,
-    flexibility: 0.8,
-    alignment: 0.85,
-    significance: 'Ring finger represents creativity and relationships.',
-    score: 76
-  };
-
-  const pinky: FingerAnalysis = {
-    length: bounds.maxY - bounds.minY * 0.25,
-    flexibility: 0.9,
-    alignment: 0.8,
-    significance: 'Pinky finger indicates communication and adaptability.',
-    score: 72
-  };
-
-  return { thumb, index, middle, ring, pinky };
-}
-
-/**
- * Generates comprehensive health indicators
- */
-function generateHealthIndicators(result: PalmReadingResult): HealthIndicators {
-  const overall = (result.lifeLine.score + result.heartLine.score + result.headLine.score) / 3;
-
-  const physical = [];
-  const mental = [];
-  const recommendations = [];
-
-  if (result.lifeLine.strength === 'weak') {
-    physical.push('Low energy levels', 'Susceptibility to illness');
-    recommendations.push('Daily pranayama practice', 'Ayurvedic detoxification');
-  } else {
-    physical.push('Good vitality', 'Strong immune system');
-  }
-
-  if (result.heartLine.strength === 'weak') {
-    mental.push('Emotional sensitivity', 'Relationship challenges');
-    recommendations.push('Heart chakra meditation', 'Emotional healing practices');
-  } else {
-    mental.push('Emotional stability', 'Good relationship skills');
-  }
-
+function generateHealth(
+  life: LineAnalysis,
+  mounts: Record<string, MountAnalysis>,
+): HealthIndicators {
+  const overall = Math.round(
+    (life.score + mounts.moon.score + mounts.saturn.score) / 3,
+  );
+  const physical =
+    life.strength === 'strong'
+      ? ['Good stamina', 'Resilient']
+      : ['Monitor energy', 'Improve sleep/diet'];
+  const mental =
+    mounts.mercury.score > 60
+      ? ['Clear thinker']
+      : ['Try daily short meditations'];
+  const recommendations =
+    life.strength === 'weak'
+      ? ['Start gentle exercise', 'Daily breathing practice']
+      : ['Maintain current routines'];
   return { overall, physical, mental, recommendations };
 }
 
-/**
- * Generates career insights
- */
-function generateCareerInsights(result: PalmReadingResult): CareerInsights {
-  const suitableCareers = [];
-  const strengths = [];
-  const challenges = [];
-
-  if (result.headLine.strength === 'strong') {
-    suitableCareers.push('Research', 'Education', 'Consulting');
-    strengths.push('Analytical thinking', 'Problem-solving');
-  }
-
-  if (result.mounts.mercury.score > 70) {
-    suitableCareers.push('Business', 'Communication', 'Sales');
-    strengths.push('Communication skills', 'Adaptability');
-  }
-
-  if (result.mounts.jupiter.score > 75) {
-    suitableCareers.push('Leadership', 'Teaching', 'Counseling');
-    strengths.push('Leadership', 'Wisdom');
-  }
-
-  if (result.fateLine.presence) {
-    strengths.push('Clear life direction', 'Purpose-driven');
-  } else {
-    challenges.push('Career uncertainty', 'Need for self-direction');
-  }
-
+function generateCareer(
+  mounts: Record<string, MountAnalysis>,
+  fate: LineAnalysis,
+): CareerInsights {
+  const suitable: string[] = [];
+  if (mounts.sun.score > 70) suitable.push('Leadership, creative professions');
+  if (mounts.mercury.score > 70)
+    suitable.push('Business, communication, writing');
+  if (mounts.jupiter.score > 70) suitable.push('Teaching, counseling');
+  const strengths = ['Adaptability', 'Practical resilience'];
+  const challenges =
+    fate.score < 50 ? ['Potential uncertainty in direction'] : [];
+  const planetary = `${mounts.sun.planetaryRuler} & ${mounts.mercury.planetaryRuler} guide career strengths.`;
   return {
-    suitableCareers,
+    suitableCareers: suitable,
     strengths,
     challenges,
-    planetaryInfluences: 'Strong Jupiter and Mercury influences suggest success in communication and leadership roles.'
+    planetaryInfluences: planetary,
   };
 }
 
-/**
- * Generates relationship insights
- */
-function generateRelationshipInsights(result: PalmReadingResult): RelationshipInsights {
-  const compatibility = (result.heartLine.score + result.mounts.venus.score) / 2;
-  const relationshipStyle = result.heartLine.strength === 'strong' ? 'nurturing' : 'independent';
-  const challenges = result.heartLine.strength === 'weak' ? ['Emotional intimacy', 'Trust issues'] : [];
-  const recommendations = result.heartLine.strength === 'weak'
-    ? ['Open communication', 'Emotional vulnerability exercises']
-    : ['Maintain healthy boundaries', 'Express appreciation'];
-
-  return { compatibility, relationshipStyle, challenges, recommendations };
+function generateRelationship(
+  heart: LineAnalysis,
+  mounts: Record<string, MountAnalysis>,
+): RelationshipInsights {
+  const compatibility = Math.round((heart.score + mounts.venus.score) / 2);
+  const style =
+    heart.strength === 'strong' ? 'Open and caring' : 'Reserved but loyal';
+  const challenges = heart.strength === 'weak' ? ['Expressing feelings'] : [];
+  const recommendations =
+    heart.strength === 'weak'
+      ? ['Practice clear communication', 'Small acts of appreciation']
+      : ['Keep boundaries', 'Show appreciation'];
+  return {
+    compatibility,
+    relationshipStyle: style,
+    challenges,
+    recommendations,
+  };
 }
 
-/**
- * Generates spiritual profile
- */
-function generateSpiritualProfile(result: PalmReadingResult): SpiritualProfile {
-  const kundalini = (result.mounts.jupiter.score + result.mounts.saturn.score) / 2;
+function generateSpiritual(
+  chakras: any,
+  mounts: Record<string, MountAnalysis>,
+): SpiritualProfile {
+  const kundalini = Math.round((chakras.thirdEye + chakras.crown) / 2);
   const chakraBalance = {
-    root: result.lifeLine.score,
-    sacral: result.mounts.venus.score,
-    solar: result.mounts.sun.score,
-    heart: result.heartLine.score,
-    throat: result.mounts.mercury.score,
-    thirdEye: result.headLine.score,
-    crown: result.mounts.jupiter.score
+    root: chakras.root,
+    sacral: chakras.sacral,
+    solar: chakras.solar,
+    heart: chakras.heart,
+    throat: chakras.throat,
+    thirdEye: chakras.thirdEye,
+    crown: chakras.crown,
   };
-
-  const spiritualPath = result.fateLine.presence ? 'Karma Yoga' : 'Jnana Yoga';
-  const practices = ['Daily meditation', 'Mantra recitation', 'Pranayama'];
-
-  if (result.mounts.jupiter.score > 75) {
-    practices.push('Scripture study', 'Teaching');
-  }
-
-  return { kundalini, chakraBalance, spiritualPath, practices };
+  const path =
+    mounts.jupiter.score > mounts.saturn.score
+      ? 'Knowledge & study'
+      : 'Service & action';
+  const practices = ['Meditation', 'Breathing exercises', 'Daily reflection'];
+  if (mounts.jupiter.score > 75)
+    practices.push('Scripture or philosophical study');
+  return { kundalini, chakraBalance, spiritualPath: path, practices };
 }
 
-/**
- * Generates Vedic correlations
- */
-function generateVedicInsights(result: PalmReadingResult): PalmReadingResult['vedicInsights'] {
-  const rulingPlanet = result.mounts.jupiter.score > result.mounts.saturn.score ? 'Jupiter' : 'Saturn';
-  const element = result.lifeLine.strength === 'strong' ? 'fire' : result.heartLine.strength === 'strong' ? 'water' : 'air';
-  const dosha = result.lifeLine.score > 70 ? 'kapha' : result.headLine.score > 70 ? 'vata' : 'pitta';
-  const chakraAlignment = `Strong ${result.heartLine.strength === 'strong' ? 'heart' : result.headLine.strength === 'strong' ? 'third eye' : 'root'} chakra`;
-  const karmicLessons = result.fateLine.presence
-    ? ['Life purpose fulfillment', 'Dharma alignment']
-    : ['Self-determination', 'Karma yoga practice'];
+/* ====== Main interpreter ====== */
+export function interpretPalmReading(
+  prediction: PalmPrediction,
+  meta?: {
+    inferenceId?: string;
+    imageSize?: { w: number; h: number };
+    ageNow?: number;
+  },
+): PalmReadingResult {
+  const start = Date.now();
+  if (!prediction || !prediction.points || prediction.points.length === 0)
+    throw new Error('No points in prediction');
+  const box = bbox(prediction.points);
 
-  return { rulingPlanet, element, dosha, chakraAlignment, karmicLessons };
-}
+  const life = analyzeLifeLine(prediction.points, box);
+  const head = analyzeHeadLine(prediction.points, box);
+  const heart = analyzeHeartLine(prediction.points, box);
+  const fate = analyzeFateLine(prediction.points, box);
+  const mounts = analyzeMounts(prediction.points, box);
+  const micros = detectMicroFeatures(prediction.points, box);
+  const fingers = analyzeFingers(prediction.points, box);
+  const sunLine = analyzeSunLine(prediction.points, box);
+  const mercuryLine = analyzeMercuryLine(prediction.points, box);
+  const marriage = analyzeMarriageLines(prediction.points, box);
 
-/**
- * Generates comprehensive recommendations
- */
-function generateRecommendations(result: PalmReadingResult): PalmReadingResult['recommendations'] {
-  const immediate = [];
-  const shortTerm = [];
-  const longTerm = [];
-  const spiritual = [];
+  // Messages (Tone 2, medium length). 4 sentences composed confidently.
+  const lifeMsg = buildLineMessage('Life Line', life, 'life');
+  const headMsg = buildLineMessage('Head Line', head, 'head');
+  const heartMsg = buildLineMessage('Heart Line', heart, 'heart');
 
-  if (result.lifeLine.strength === 'weak') {
-    immediate.push('Start daily pranayama practice');
-    shortTerm.push('Consult Ayurvedic practitioner');
-  }
+  const personality = generatePersonality(
+    life,
+    heart,
+    head,
+    mounts,
+    fate.rawPointsCount > 0,
+  );
+  const health = generateHealth(life, mounts);
+  const career = generateCareer(mounts, fate);
+  const relationships = generateRelationship(heart, mounts);
+  const chakras = computeChakraProfile(mounts, life, head, heart);
+  const spirituality = generateSpiritual(chakras, mounts);
+  const karmicLessons = computeKarmicLessons(mounts, fate);
+  const timeline = buildTimeline(life, fate, mounts, meta?.ageNow ?? 25);
+  const remedies = suggestRemedies(mounts, life, heart, head);
+  const handShapeType = classifyHandShape(box, fingers);
 
-  if (result.heartLine.strength === 'weak') {
-    immediate.push('Practice heart chakra meditation');
-    shortTerm.push('Journal emotional patterns');
-  }
-
-  if (result.headLine.strength === 'weak') {
-    immediate.push('Begin meditation practice');
-    shortTerm.push('Study Vedic philosophy');
-  }
-
-  longTerm.push('Deepen spiritual practice');
-  longTerm.push('Align career with life purpose');
-
-  spiritual.push('Daily mantra recitation');
-  spiritual.push('Regular puja practice');
-  spiritual.push('Study sacred texts');
-
-  return { immediate, shortTerm, longTerm, spiritual };
-}
-
-/**
- * Main function to interpret palm reading from Roboflow prediction data
- */
-export function interpretPalmReading(prediction: PalmPrediction): PalmReadingResult {
-  const startTime = Date.now();
-  const bounds = getPalmBounds(prediction.points);
-
-  // Analyze all components
-  const lifeLine = analyzeLifeLine(prediction.points, bounds);
-  const heartLine = analyzeHeartLine(prediction.points, bounds);
-  const headLine = analyzeHeadLine(prediction.points, bounds);
-  const fateLine = analyzeFateLine(prediction.points, bounds);
-  const marriageLine = analyzeMarriageLine(prediction.points, bounds);
-  const sunLine = analyzeSunLine(prediction.points, bounds);
-  const mercuryLine = analyzeMercuryLine(prediction.points, bounds);
-  const mounts = analyzeMounts(prediction.points, bounds);
-  const fingers = analyzeFingers(bounds);
-
-  // Generate derived insights
-  const result: PalmReadingResult = {
-    // Basic Information
-    analysisId: `palm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+  return {
+    analysisId: `palm_${prediction.detection_id}_${Date.now()}`,
     timestamp: new Date().toISOString(),
     confidence: prediction.confidence,
-
-    // Physical Characteristics
-    handShape: 'Rectangular', // Could be analyzed from points
-    handSize: 'Medium',
+    handShape: handShapeType.handType,
+    handSize:
+      box.height > 600 ? 'Large' : box.height > 350 ? 'Medium' : 'Small',
     skinTexture: 'Smooth',
-
-    // Major Lines
-    lifeLine,
-    heartLine,
-    headLine,
-    fateLine,
-    marriageLine,
-    sunLine,
-    mercuryLine,
-
-    // Mounts Analysis
-    mounts,
-
-    // Finger Analysis
-    fingers,
-
-    // Derived Insights
-    personality: {
-      overall: generateOverallPersonality(lifeLine, heartLine, headLine, fateLine),
-      traits: ['Determined', 'Intuitive', 'Spiritual'],
-      dominantGuna: 'sattva',
-      strengths: ['Wisdom', 'Compassion', 'Resilience'],
-      weaknesses: ['Perfectionism', 'Sensitivity']
+    lifeLine: {
+      ...life,
+      interpretation: lifeMsg,
+      vedicSignificance: 'Indicates vitality and life direction.',
     },
-
-    health: {} as HealthIndicators,
-    career: {} as CareerInsights,
-    relationships: {} as RelationshipInsights,
-    spirituality: {} as SpiritualProfile,
-
-    // Vedic Correlations
-    vedicInsights: {} as PalmReadingResult['vedicInsights'],
-
-    // Recommendations
-    recommendations: {} as PalmReadingResult['recommendations'],
-
-    // Service Metadata
-    version: '1.0.0',
+    heartLine: {
+      ...heart,
+      interpretation: heartMsg,
+      vedicSignificance: 'Indicates emotional style and relationships.',
+    },
+    headLine: {
+      ...head,
+      interpretation: headMsg,
+      vedicSignificance: 'Indicates thinking and decision-making.',
+    },
+    fateLine: {
+      presence: fate.rawPointsCount > 0,
+      analysis:
+        fate.rawPointsCount > 0
+          ? { ...fate, vedicSignificance: 'Shows life purpose tendencies.' }
+          : undefined,
+    },
+    marriageLine: marriage,
+    sunLine: {
+      presence: !!(sunLine as any).presence,
+      analysis: (sunLine as any).analysis,
+    },
+    mercuryLine: {
+      presence: !!(mercuryLine as any).presence,
+      analysis: (mercuryLine as any).analysis,
+    },
+    mounts: {
+      venus: mounts.venus,
+      mars: mounts.mars,
+      jupiter: mounts.jupiter,
+      saturn: mounts.saturn,
+      mercury: mounts.mercury,
+      moon: mounts.moon,
+      sun: mounts.sun,
+    },
+    fingers,
+    personality,
+    health,
+    career,
+    relationships,
+    spirituality,
+    vedicInsights: {
+      rulingPlanet: mounts.jupiter.planetaryRuler || 'Jupiter',
+      element:
+        mounts.sun.score > mounts.moon.score
+          ? 'fire'
+          : mounts.venus.score > mounts.mercury.score
+          ? 'water'
+          : 'air',
+      dosha:
+        mounts.moon.score > mounts.sun.score
+          ? 'kapha'
+          : mounts.sun.score > mounts.moon.score
+          ? 'pitta'
+          : 'vata',
+      chakraAlignment: personality.overall.includes('Warm')
+        ? 'Heart'
+        : 'Third Eye',
+      karmicLessons: karmicLessons.lessons,
+    },
+    recommendations: remedies,
+    version: '2.1.0-toned2',
     modelUsed: 'Roboflow Palm Detection',
-    processingTime: 0
+    processingTime: Date.now() - start,
   };
-
-  // Generate comprehensive insights
-  result.health = generateHealthIndicators(result);
-  result.career = generateCareerInsights(result);
-  result.relationships = generateRelationshipInsights(result);
-  result.spirituality = generateSpiritualProfile(result);
-  result.vedicInsights = generateVedicInsights(result);
-  result.recommendations = generateRecommendations(result);
-  result.processingTime = Date.now() - startTime;
-
-  return result;
 }
 
-/**
- * Generates overall personality description
- */
-function generateOverallPersonality(
-  lifeLine: LineAnalysis,
-  heartLine: LineAnalysis,
-  headLine: LineAnalysis,
-  fateLine: { presence: boolean; analysis?: LineAnalysis }
-): string {
-  const strengths = [];
-  const areas = [];
-
-  if (lifeLine.strength === 'strong') strengths.push('vitality');
-  else areas.push('physical health');
-
-  if (heartLine.strength === 'strong') strengths.push('emotional depth');
-  else areas.push('emotional balance');
-
-  if (headLine.strength === 'strong') strengths.push('intellectual capacity');
-  else areas.push('mental clarity');
-
-  if (fateLine.presence) strengths.push('life purpose');
-  else areas.push('direction');
-
-  let personality = 'You are a ';
-  if (strengths.length > 0) {
-    personality += strengths.join(', ') + ' focused individual';
+/* ====== Supporting functions used above (charkas/karmic/timeline/remedies/handshape) ====== */
+function computeChakraProfile(
+  mounts: Record<string, MountAnalysis>,
+  life: LineAnalysis,
+  head: LineAnalysis,
+  heart: LineAnalysis,
+) {
+  const root = Math.round(life.score);
+  const sacral = Math.round((mounts.venus.score + mounts.moon.score) / 2);
+  const solar = Math.round(mounts.sun.score);
+  const heartVal = Math.round(heart.score);
+  const throat = Math.round(mounts.mercury.score);
+  const thirdEye = Math.round(head.score);
+  const crown = Math.round((mounts.jupiter.score + mounts.saturn.score) / 2);
+  const weak = Object.entries({
+    root,
+    sacral,
+    solar,
+    heart: heartVal,
+    throat,
+    thirdEye,
+    crown,
+  })
+    .filter(([k, v]) => v < 50)
+    .map(([k]) => k);
+  const summary =
+    weak.length === 0
+      ? 'All chakras show good balance.'
+      : `Consider strengthening: ${weak.join(', ')}.`;
+  return {
+    root,
+    sacral,
+    solar,
+    heart: heartVal,
+    throat,
+    thirdEye,
+    crown,
+    summary,
+  };
+}
+function computeKarmicLessons(
+  mounts: Record<string, MountAnalysis>,
+  fate: LineAnalysis,
+) {
+  const lessons: string[] = [];
+  if (mounts.saturn.score > 75)
+    lessons.push('Themes of discipline and duty (Saturn).');
+  if (fate.score < 50)
+    lessons.push('Life direction may need deliberate focus.');
+  if (mounts.moon.score > 70)
+    lessons.push('Emotional lessons through relationships.');
+  if (lessons.length === 0)
+    lessons.push('Karmic trends are subtle; consistent action helps.');
+  const pastLifeIndicators =
+    mounts.saturn.score > 82 ? ['Past-life responsibility patterns'] : [];
+  return { lessons, pastLifeIndicators };
+}
+function buildTimeline(
+  life: LineAnalysis,
+  fate: LineAnalysis,
+  mounts: Record<string, MountAnalysis>,
+  ageNow = 25,
+) {
+  const timeline: Record<string, string> = {};
+  for (let i = 0; i < 20; i++) {
+    const age = ageNow + i;
+    const events: string[] = [];
+    if (i === 2 && life.breaks > 0)
+      events.push('Short reassessment period (health/career).');
+    if (i === 4 && fate.forks > 0)
+      events.push('New direction or study opportunity.');
+    if (i === 7 && mounts.sun.score > 75)
+      events.push('Career recognition likely.');
+    if (i === 10 && mounts.moon.score > 70)
+      events.push('Important relationship deepening.');
+    if (i === 15 && life.score > 70)
+      events.push('Long-term stability consolidates.');
+    if (events.length === 0)
+      events.push('Steady progress, no major disruptions indicated.');
+    timeline[`age${age}`] = events.join(' ');
   }
-  if (areas.length > 0) {
-    personality += '. Areas for growth include ' + areas.join(', ') + '.';
+  return timeline;
+}
+function suggestRemedies(
+  mounts: Record<string, MountAnalysis>,
+  life: LineAnalysis,
+  heart: LineAnalysis,
+  head: LineAnalysis,
+) {
+  const immediate: string[] = [],
+    shortTerm: string[] = [],
+    longTerm: string[] = [],
+    spiritual: string[] = [];
+  if (life.strength === 'weak') {
+    immediate.push('Start daily 10-minute breathing practice');
+    shortTerm.push('Consult a health professional or Ayurvedic advisor');
   }
-
-  return personality + ' According to Vedic palmistry, your unique combination of lines indicates a journey of self-discovery and spiritual evolution.';
+  if (heart.strength === 'weak') {
+    immediate.push('Practice short heart-breathing exercises');
+    shortTerm.push('Start daily gratitude journaling for 21 days');
+  }
+  if (head.strength === 'weak')
+    shortTerm.push('Do short focused concentration exercises');
+  if (mounts.mercury.score < 50)
+    shortTerm.push('Practice writing and short speaking exercises');
+  if (mounts.jupiter.score < 55)
+    longTerm.push('Seek mentorship and structured study programs');
+  spiritual.push(
+    randChoice([
+      'Daily brief mantra or grounding practice (5–10 min)',
+      'Short daily meditation (5–10 min)',
+    ]),
+  );
+  return { immediate, shortTerm, longTerm, spiritual };
+}
+function classifyHandShape(box: ReturnType<typeof bbox>, fingers: any) {
+  const aspect = box.width / box.height;
+  const avgFingerRatio =
+    (fingers.index.lengthRatio +
+      fingers.middle.lengthRatio +
+      fingers.ring.lengthRatio +
+      fingers.pinky.lengthRatio) /
+    4;
+  const handType =
+    avgFingerRatio > 1.05
+      ? 'Water (long fingers, reflective & intuitive)'
+      : avgFingerRatio < 0.95
+      ? 'Fire/Earth (shorter fingers, practical & energetic)'
+      : 'Air (balanced & communicative)';
+  const shape = aspect > 1.05 ? 'Square' : 'Rectangular';
+  return { shape, handType };
 }

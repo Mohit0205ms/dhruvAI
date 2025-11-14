@@ -2,6 +2,7 @@
 import axios from 'axios';
 import Constants from 'expo-constants';
 import { interpretPalmReading, PalmPrediction } from '../../../utils/palmInterpreter';
+import { interpretPalm } from '@/lib/palmistry/interpretPalm';
 
 // Types
 interface PalmReadingRequest {
@@ -101,7 +102,7 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     // Interpret the palm reading using Vedic principles
-    const interpretation = interpretPalmReading(rawResult.predictions[0] as PalmPrediction);
+    const interpretation = interpretPalm(rawResult.predictions[0] as PalmPrediction);
 
     return new Response(
       JSON.stringify({
