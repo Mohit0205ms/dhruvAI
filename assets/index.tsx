@@ -13,7 +13,18 @@ import bellIcon from './icons/bell.png';
 import robotIcon from './icons/robot.png';
 
 // zodiac sign
-import leoIcon from './icons/zodiacSign/leo.png';
+import ariesIcon from './icons/zodiacSign/aries.png';
+import taurusIcon from './icons/zodiacSign/taurus.png';
+import geminiIcon from './icons/zodiacSign/gemini.png';
+import cancerIcon from './icons/zodiacSign/cancer.png';
+import leoIcon from './icons/zodiacSign/lion.png';
+import virgoIcon from './icons/zodiacSign/virgo.png';
+import libraIcon from './icons/zodiacSign/Libra.png';
+import scorpioIcon from './icons/zodiacSign/scorpio.png';
+import sagittariusIcon from './icons/zodiacSign/sagittarius.png';
+import capricornIcon from './icons/zodiacSign/capricorn.png';
+import aquariusIcon from './icons/zodiacSign/aquarius.png';
+import piscesIcon from './icons/zodiacSign/pisces.png';
 
 export const images = {
   loginWithNumber: login_with_number_image,
@@ -32,5 +43,16 @@ export const icons = {
 }
 
 export const zodiacSign = {
-  leo: leoIcon
+  aries: ariesIcon,
+  taurus: taurusIcon,
+  gemini: geminiIcon,
+  cancer: cancerIcon,
+  leo: leoIcon,
+  virgo: virgoIcon,
+  libra: libraIcon,
+  scorpio: scorpioIcon,
+  sagittarius: sagittariusIcon,
+  capricorn: capricornIcon,
+  aquarius: aquariusIcon,
+  pisces: piscesIcon,
 }

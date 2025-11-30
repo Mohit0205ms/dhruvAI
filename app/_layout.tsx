@@ -3,16 +3,23 @@ import { Stack } from 'expo-router';
 import 'react-native-reanimated';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Provider } from 'react-redux';
+import { PersistGate } from 'redux-persist/integration/react';
+import { store, persistor } from '@/store/store';
 
 export default function RootLayout() {
 
   return (
-    <GestureHandlerRootView>
-      <BottomSheetModalProvider>
-        <Stack screenOptions={{headerShown: false}}>
-          <Stack.Screen name='(auth)' options={{ headerShown: false }} />
-        </Stack>
-      </BottomSheetModalProvider>
-    </GestureHandlerRootView>
+    <Provider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
+        <GestureHandlerRootView>
+          <BottomSheetModalProvider>
+            <Stack screenOptions={{headerShown: false}}>
+              <Stack.Screen name='(auth)' options={{ headerShown: false }} />
+            </Stack>
+          </BottomSheetModalProvider>
+        </GestureHandlerRootView>
+      </PersistGate>
+    </Provider>
   );
 }
