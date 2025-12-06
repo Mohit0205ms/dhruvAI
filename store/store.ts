@@ -1,4 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit';
+import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { persistStore, persistReducer } from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import userDetailReducer from './userDetail';
@@ -6,15 +6,19 @@ import userDetailReducer from './userDetail';
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['userDetail'], // Only persist userDetail
+  // Removed whitelist since we're persisting everything
 };
 
-const persistedReducer = persistReducer(persistConfig, userDetailReducer);
+// Combine all reducers first
+const rootReducer = combineReducers({
+  userDetail: userDetailReducer,
+});
+
+// Apply persistence to the combined reducer
+const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export const store = configureStore({
-  reducer: {
-    userDetail: persistedReducer,
-  },
+  reducer: persistedReducer, // Use the persisted reducer directly
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
@@ -25,7 +29,7 @@ export const store = configureStore({
 
 export const persistor = persistStore(store);
 
-// Infer the `RootState` and `AppDispatch` types from the store itself
-export type RootState = ReturnType<typeof store.getState>
+// Define the state type before persistence
+export type RootState = ReturnType<typeof rootReducer>
 // Inferred type: {posts: PostsState, comments: CommentsState, users: UsersState}
 export type AppDispatch = typeof store.dispatch

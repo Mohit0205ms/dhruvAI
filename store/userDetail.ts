@@ -11,6 +11,8 @@ interface UserState {
   timeOfBirth: string;
   gender: string;
   moonSign: string;
+  lat: number;
+  lon: number;
   profileCompleted: boolean;
 }
 
@@ -24,6 +26,8 @@ const initialState: UserState = {
   timeOfBirth: "",
   gender: "",
   moonSign: "",
+  lat: 0,
+  lon: 0,
   profileCompleted: false,
 }
 

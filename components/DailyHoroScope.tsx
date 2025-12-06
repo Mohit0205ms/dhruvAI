@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useState, useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { setUserDetails, completeProfile } from '@/store/userDetail';
+import { useKundali } from '@/hooks/useKundali';
 
 interface UserProfile {
   firstName: string;
@@ -118,9 +119,8 @@ const DailyHoroScope = () => {
   const profileCompleted = useAppSelector(
     (state) => state.userDetail.profileCompleted,
   );
-  const userMoonSign = useAppSelector(
-    (state) => state.userDetail.moonSign,
-  );
+  const userMoonSign = useAppSelector((state) => state.userDetail.moonSign);
+  const { saveKundali } = useKundali();
 
   // Function to map moon sign string to zodiac sign key
   const getZodiacSignKey = (moonSign: string): string => {
@@ -154,7 +154,7 @@ const DailyHoroScope = () => {
     lat: null,
     lon: null,
   });
-console.log("corrdinates: ",corrdinates);
+  console.log('corrdinates: ', corrdinates);
   const autocomplete = useGeoapifyAutocomplete();
 
   // Function to fetch moon sign from local API
@@ -194,6 +194,68 @@ console.log("corrdinates: ",corrdinates);
     }
   };
 
+  const fetchKundali = async (
+    date: Date,
+    time: Date,
+    latitude: number,
+    longitude: number,
+    moonSign: string,
+  ) => {
+    const url = process.env.EXPO_PUBLIC_GET_KUNDALI!;
+
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hour = time.getHours();
+    const minute = time.getMinutes();
+
+    const data = {
+      year: year,
+      month: month,
+      date: day,
+      hours: hour,
+      minutes: minute,
+      seconds: 0,
+      latitude: latitude,
+      longitude: longitude,
+      timezone: 5.5,
+      settings: {
+        observation_point: 'topocentric',
+        ayanamsha: 'lahiri',
+        language: 'en',
+      },
+    };
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': 'sRVrLCcdYV5iTb6ELs4B91vcyyXmjaxZ5GaMMCNF',
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+      console.log("result: ", result);
+
+      if (result.statusCode === 200) {
+        // Save kundali data to Realm
+        const kundaliId = await saveKundali({
+          statusCode: result.statusCode,
+          output: result.output, // This should contain the planets data
+          userId: 'user123', // You can set this to a proper user ID
+        });
+        console.log('Kundali saved with ID:', kundaliId);
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error fetching kundali:', error);
+      throw error;
+    }
+  };
+
   // Form validation
   const validateForm = () => {
     const newErrors: Partial<Record<keyof UserProfile, string>> = {};
@@ -224,7 +286,10 @@ console.log("corrdinates: ",corrdinates);
     if (!validateForm()) return;
 
     if (corrdinates.lat === null || corrdinates.lon === null) {
-      Alert.alert('Error', 'Please select a place of birth from the suggestions.');
+      Alert.alert(
+        'Error',
+        'Please select a place of birth from the suggestions.',
+      );
       return;
     }
 
@@ -236,6 +301,14 @@ console.log("corrdinates: ",corrdinates);
         profileData.timeOfBirth,
         corrdinates.lat,
         corrdinates.lon,
+      );
+
+      const kundali = await fetchKundali(
+        profileData.dateOfBirth,
+        profileData.timeOfBirth,
+        corrdinates.lat,
+        corrdinates.lon,
+        moonSign
       );
 
       // Store moon sign in local state and Redux
@@ -250,6 +323,8 @@ console.log("corrdinates: ",corrdinates);
           placeOfBirth: profileData.placeOfBirth,
           timeOfBirth: `${profileData.timeOfBirth.getHours().toString().padStart(2, '0')}:${profileData.timeOfBirth.getMinutes().toString().padStart(2, '0')}`, // Convert to string
           moonSign: moonSign,
+          lat: corrdinates.lat,
+          lon: corrdinates.lon,
         }),
       );
       dispatch(completeProfile());
@@ -284,6 +359,12 @@ console.log("corrdinates: ",corrdinates);
   // Date/time picker handlers
   const onDateChange = (event: any, selectedDate?: Date) => {
     // setShowDatePicker(false);
+    if (Platform.OS === 'android') {
+      // On Android, close picker when user confirms selection
+      if (event.type === 'set') {
+        setShowDatePicker(false);
+      }
+    }
     if (selectedDate) {
       setProfileData((prev) => ({ ...prev, dateOfBirth: selectedDate }));
     }
@@ -291,6 +372,12 @@ console.log("corrdinates: ",corrdinates);
 
   const onTimeChange = (event: any, selectedTime?: Date) => {
     // setShowTimePicker(false);
+    if (Platform.OS === 'android') {
+      // On Android, close picker when user confirms selection
+      if (event.type === 'set') {
+        setShowTimePicker(false);
+      }
+    }
     if (selectedTime) {
       setProfileData((prev) => ({ ...prev, timeOfBirth: selectedTime }));
     }
@@ -327,7 +414,7 @@ console.log("corrdinates: ",corrdinates);
                     <Image
                       source={getZodiacSignIcon(userMoonSign)}
                       className='w-20 h-20 rounded-full shadow-lg'
-                      style={{tintColor: '#FFD700'}}
+                      style={{ tintColor: '#FFD700' }}
                     />
                   </View>
 
@@ -370,28 +457,28 @@ console.log("corrdinates: ",corrdinates);
         <View className='px-4'>
           <View className='rounded-2xl overflow-hidden relative'>
             <LinearGradient colors={['#0F172A', '#1E3A8A']}>
-                <View className='w-full rounded-2xl px-6 shadow-xl flex-row items-center'>
-                  <View className='mr-4'>
-                    <Image
-                      source={zodiacSign.aries}
-                      className='w-20 h-20 rounded-full shadow-lg opacity-40'
-                      style={{tintColor: '#FFD700'}}
-                    />
-                  </View>
-
-                  <View className='flex-1 backdrop-blur-sm rounded-xl p-4'>
-                    <Text className='text-white/40 text-2xl font-bold mb-2'>
-                      Aries
-                    </Text>
-                    <Text className='text-gray-500/60 text-sm mb-4'>
-                      October 11, 2025
-                    </Text>
-                    <Text className='text-white/30 text-base leading-relaxed'>
-                      Seek out new experiences today; they could lead to personal
-                      growth
-                    </Text>
-                  </View>
+              <View className='w-full rounded-2xl px-6 shadow-xl flex-row items-center'>
+                <View className='mr-4'>
+                  <Image
+                    source={zodiacSign.aries}
+                    className='w-20 h-20 rounded-full shadow-lg opacity-40'
+                    style={{ tintColor: '#FFD700' }}
+                  />
                 </View>
+
+                <View className='flex-1 backdrop-blur-sm rounded-xl p-4'>
+                  <Text className='text-white/40 text-2xl font-bold mb-2'>
+                    Aries
+                  </Text>
+                  <Text className='text-gray-500/60 text-sm mb-4'>
+                    October 11, 2025
+                  </Text>
+                  <Text className='text-white/30 text-base leading-relaxed'>
+                    Seek out new experiences today; they could lead to personal
+                    growth
+                  </Text>
+                </View>
+              </View>
             </LinearGradient>
 
             {/* Blur Overlay */}
@@ -468,7 +555,10 @@ console.log("corrdinates: ",corrdinates);
                       marginBottom: 8,
                     }}
                   >
-                    🌟 {profileCompleted ? 'Update Your Profile' : 'Complete Your Profile'}
+                    🌟{' '}
+                    {profileCompleted
+                      ? 'Update Your Profile'
+                      : 'Complete Your Profile'}
                   </Text>
                   <Text
                     style={{
@@ -480,8 +570,7 @@ console.log("corrdinates: ",corrdinates);
                   >
                     {profileCompleted
                       ? 'Update your birth details to refresh your personalized horoscope insights'
-                      : 'Enter your birth details to unlock personalized horoscope insights'
-                    }
+                      : 'Enter your birth details to unlock personalized horoscope insights'}
                   </Text>
                 </View>
 

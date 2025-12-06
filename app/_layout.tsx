@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from '@/store/store';
+import { RealmProvider } from '@/realm';
 
 export default function RootLayout() {
 
@@ -14,9 +15,11 @@ export default function RootLayout() {
       <PersistGate loading={null} persistor={persistor}>
         <GestureHandlerRootView>
           <BottomSheetModalProvider>
-            <Stack screenOptions={{headerShown: false}}>
-              <Stack.Screen name='(auth)' options={{ headerShown: false }} />
-            </Stack>
+            <RealmProvider>
+              <Stack screenOptions={{headerShown: false}}>
+                <Stack.Screen name='(auth)' options={{ headerShown: false }} />
+              </Stack>
+            </RealmProvider>
           </BottomSheetModalProvider>
         </GestureHandlerRootView>
       </PersistGate>

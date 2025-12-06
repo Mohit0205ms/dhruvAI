@@ -1,10 +1,11 @@
 import { icons } from "@/assets";
 import { Image, Text, TouchableOpacity, View } from "react-native";
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from "expo-router";
 
 const AskMeAnything = () => {
   return (
-    <TouchableOpacity className='px-4 mt-5'>
+    <TouchableOpacity className='px-4 mt-5' onPress={()=> router.navigate('/(tabs)/chat')}>
       <View className='rounded-2xl overflow-hidden'>
         <LinearGradient colors={['#0F172A', '#1E3A8A']}>
           <View className='w-full rounded-2xl px-6 shadow-xl flex-row items-center'>
