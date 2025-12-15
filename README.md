@@ -82,14 +82,15 @@ DhruvAI is a comprehensive mobile astrology application that combines ancient Ve
 ## 📱 Screenshots
 
 <div align="center">
+<img src="https://github.com/user-attachments/assets/4d91d598-5fd0-4029-b9f9-a05574c6a4f0" width="300" height="650"/>
+<img src="https://github.com/user-attachments/assets/85df4a1d-52c5-458d-b4b5-4c3d35a7d724" width="300" height="650"/>
 <img src="https://github.com/user-attachments/assets/3ddb3178-8b18-475f-af47-ba225c63462f" width="300" height="650"/>
 <img src="https://github.com/user-attachments/assets/c879fb42-4e08-49bb-9b5b-ca544eca6114" width="300" height="650"/>
 <img src="https://github.com/user-attachments/assets/94076a73-f822-40f2-889b-34f367b1423e" width="300" height="650"/>
 <img src="https://github.com/user-attachments/assets/6340aaab-dea0-4fc9-adb3-2ec000e70b68" width="300" height="650"/>
 <img src="https://github.com/user-attachments/assets/bff6dde8-6248-4605-a683-6deb57f51abc" width="300" height="650"/>
-<img src="https://github.com/user-attachments/assets/4d91d598-5fd0-4029-b9f9-a05574c6a4f0" width="300" height="650"/>
+
 <img src="https://github.com/user-attachments/assets/a22a2a0e-9a48-4a82-adc3-cd11d6bc27a0" width="300" height="650"/>
-<img src="https://github.com/user-attachments/assets/85df4a1d-52c5-458d-b4b5-4c3d35a7d724" width="300" height="650"/>
 <img src="https://github.com/user-attachments/assets/2bd07da5-bd0f-4871-a7f9-c17e1096c8f1" width="300" height="650"/>
 <img src="https://github.com/user-attachments/assets/f096790a-0462-4597-a769-f77b0de3e64b" width="300" height="650"/>
 </div>
