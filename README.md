@@ -236,24 +236,12 @@ We welcome contributions to DhruvAI! Here's how you can help:
 - Ensure accessibility compliance
 - Maintain code quality with ESLint
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## 🙏 Acknowledgments
 
 - **Vedic Astrology Community** - For preserving ancient wisdom
 - **Google AI** - For Gemini AI capabilities
 - **Expo Team** - For the amazing development platform
 - **React Native Community** - For continuous innovation
-
-## 📞 Support
-
-For questions, bug reports, or feature requests:
-
-- **GitHub Issues**: [Create an issue](https://github.com/yourusername/dhruvai/issues)
-- **Email**: support@dhruvai.com
-- **Documentation**: [Full API docs](https://docs.dhruvai.com)
 
 ---
 
