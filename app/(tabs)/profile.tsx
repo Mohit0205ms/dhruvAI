@@ -343,13 +343,13 @@ const Profile = () => {
   );
 
   return (
-    <SafeAreaView className='flex-1 bg-gray-50'>
+    <View className='flex-1 bg-gray-50'>
       {/* Header Section */}
       <View className='relative'>
         <View className='relative'>
           <Quadrant />
           <View className='absolute top-[50px] left-[15px] w-[200px] h-[80px] justify-center'>
-            <Text className='text-white font-semibold text-lg'>Hello {firstName || 'User'}</Text>
+            <Text className='text-white font-semibold text-lg'>Hello {firstName || ''}</Text>
             <Text className='text-white text-xl font-bold mt-2 ml-[15px]'>
               Your Profile
             </Text>
@@ -1019,7 +1019,7 @@ const Profile = () => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
