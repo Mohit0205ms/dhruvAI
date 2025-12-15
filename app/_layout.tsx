@@ -30,7 +30,9 @@ export default function RootLayout() {
           <BottomSheetModalProvider>
             <RealmProvider>
               <Stack screenOptions={{headerShown: false}}>
-                <Stack.Screen name='(auth)' options={{ headerShown: false }} />
+                <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
+                <Stack.Screen name='palm-reading' options={{ headerShown: false }} />
+                <Stack.Screen name='palm-reading-results' options={{ headerShown: false }} />
               </Stack>
             </RealmProvider>
           </BottomSheetModalProvider>
