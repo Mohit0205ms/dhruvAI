@@ -17,7 +17,7 @@ const InstructionsModal: React.FC<InstructionsModalProps> = ({ visible, onClose 
     >
       <View className="flex-1 justify-center items-center bg-black/70 px-4">
         <LinearGradient
-          colors={['#0F172A', '#1E3A8A','#8B5CF6'] as const}
+          colors={['#0F172A', '#1E3A8A'] as const}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={{

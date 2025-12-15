@@ -17,6 +17,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { setUserDetails, completeProfile } from '@/store/userDetail';
 import { useKundali } from '@/hooks/useKundali';
+import { useLocalNotification } from '@/hooks/useLocalNotification';
 
 interface UserProfile {
   firstName: string;
@@ -121,6 +122,7 @@ const DailyHoroScope = () => {
   );
   const userMoonSign = useAppSelector((state) => state.userDetail.moonSign);
   const { saveKundali } = useKundali();
+  const { triggerNotification } = useLocalNotification();
 
   // Function to map moon sign string to zodiac sign key
   const getZodiacSignKey = (moonSign: string): string => {
@@ -281,6 +283,25 @@ const DailyHoroScope = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Get valuable moon sign message
+  const getMoonSignMessage = (moonSign: string): string => {
+    const messages: Record<string, string> = {
+      Aries: "🌙 Your Moon Sign is Aries! This fiery lunar influence ignites your emotional passion and instinctive courage. Aries Moon brings natural leadership, quick emotional responses, and an adventurous spirit that helps you pioneer new paths in relationships and personal growth.",
+      Taurus: "🌙 Your Moon Sign is Taurus! This earthy lunar energy grounds your emotions in stability and sensuality. Taurus Moon gifts you with emotional security, patience, and an appreciation for life's simple pleasures, creating a foundation of trust and comfort in your relationships.",
+      Gemini: "🌙 Your Moon Sign is Gemini! This airy lunar intelligence sharpens your mental and emotional adaptability. Gemini Moon blesses you with versatile communication, curiosity, and social grace, helping you navigate complex emotions through understanding and connection.",
+      Cancer: "🌙 Your Moon Sign is Cancer! This watery lunar intuition deepens your emotional sensitivity and nurturing nature. Cancer Moon provides profound empathy, protective instincts, and intuitive wisdom, making you a natural healer and emotional anchor for loved ones.",
+      Leo: "🌙 Your Moon Sign is Leo! This radiant lunar creativity illuminates your emotional warmth and generosity. Leo Moon empowers you with confident self-expression, loyalty, and creative passion, inspiring others through your authentic emotional brilliance.",
+      Virgo: "🌙 Your Moon Sign is Virgo! This analytical lunar precision enhances your emotional intelligence and helpful nature. Virgo Moon gives you practical wisdom, attention to detail, and healing service, allowing you to nurture others through thoughtful care and understanding.",
+      Libra: "🌙 Your Moon Sign is Libra! This balanced lunar harmony cultivates your diplomatic and fair-minded emotions. Libra Moon brings graceful relationships, aesthetic appreciation, and peaceful resolution, helping you create harmony in both personal and social spheres.",
+      Scorpio: "🌙 Your Moon Sign is Scorpio! This intense lunar transformation deepens your emotional power and intuition. Scorpio Moon grants you profound insight, emotional resilience, and transformative healing abilities, revealing hidden truths and fostering deep connections.",
+      Sagittarius: "🌙 Your Moon Sign is Sagittarius! This expansive lunar philosophy broadens your emotional horizons and optimism. Sagittarius Moon inspires you with adventurous spirit, philosophical wisdom, and generous enthusiasm, encouraging growth through exploration and learning.",
+      Capricorn: "🌙 Your Moon Sign is Capricorn! This ambitious lunar structure builds your emotional discipline and responsibility. Capricorn Moon provides steady determination, practical wisdom, and goal-oriented focus, helping you achieve emotional stability and long-term success.",
+      Aquarius: "🌙 Your Moon Sign is Aquarius! This innovative lunar consciousness expands your humanitarian and intellectual emotions. Aquarius Moon brings progressive thinking, community focus, and creative solutions, inspiring you to contribute to collective evolution and social change.",
+      Pisces: "🌙 Your Moon Sign is Pisces! This compassionate lunar spirituality connects you to universal emotional currents. Pisces Moon blesses you with deep empathy, artistic sensitivity, and intuitive guidance, allowing you to heal through compassion and creative expression."
+    };
+    return messages[moonSign.toLowerCase()] || `🌙 Your Moon Sign is ${moonSign}! This sacred lunar influence shapes your emotional world and intuitive guidance, bringing unique gifts to your personality and relationships.`;
+  };
+
   // Handle form submission
   const handleProfileSubmit = async () => {
     if (!validateForm()) return;
@@ -294,6 +315,14 @@ const DailyHoroScope = () => {
     }
 
     setIsSubmitting(true);
+
+    // Show initial notification about calculating moon sign
+    await triggerNotification({
+      title: '🔮 Calculating Your Celestial Blueprint',
+      body: 'We\'re analyzing the cosmic energies present at your birth to reveal your sacred Moon Sign. This ancient wisdom will unlock deep insights into your emotional nature and life purpose.',
+      second: 1
+    });
+
     try {
       // Fetch moon sign from API using coordinates
       const moonSign = await fetchMoonSign(
@@ -308,13 +337,18 @@ const DailyHoroScope = () => {
         profileData.timeOfBirth,
         corrdinates.lat,
         corrdinates.lon,
-        moonSign
+        moonSign,
       );
 
-      // Store moon sign in local state and Redux
-      setProfileData((prev) => ({ ...prev, moonSign }));
+      setTimeout(async () => {
+        await triggerNotification({
+          title: `✨ ${moonSign} - Your Sacred Moon Sign Revealed!`,
+          body: getMoonSignMessage(moonSign),
+          second: 1,
+        });
+      }, 0);
 
-      // Save profile data to Redux including moon sign
+      setProfileData((prev) => ({ ...prev, moonSign }));
       dispatch(
         setUserDetails({
           firstName: profileData.firstName,
@@ -328,9 +362,7 @@ const DailyHoroScope = () => {
         }),
       );
       dispatch(completeProfile());
-
       setShowProfileModal(false);
-
       // Reset form
       setProfileData({
         firstName: '',
@@ -340,11 +372,6 @@ const DailyHoroScope = () => {
         timeOfBirth: new Date(),
         moonSign: '',
       });
-
-      Alert.alert(
-        'Success',
-        'Your profile and moon sign have been saved successfully!',
-      );
     } catch (error) {
       console.error('Error during profile submission:', error);
       Alert.alert(
@@ -443,15 +470,6 @@ const DailyHoroScope = () => {
               </TouchableOpacity>
             </View>
           </View>
-
-          <TouchableOpacity
-            onPress={() => setShowProfileModal(true)}
-            className='mt-3 bg-gradient-to-r from-gray-600 to-gray-700 rounded-xl py-3 px-6 shadow-lg'
-          >
-            <Text className='text-white font-semibold text-center'>
-              Change your profile
-            </Text>
-          </TouchableOpacity>
         </View>
       ) : (
         <View className='px-4'>

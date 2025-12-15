@@ -13,6 +13,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useLocalNotification } from '@/hooks/useLocalNotification';
 
 const PalmReadingScreen = () => {
   const [permission, requestPermission] = useCameraPermissions();
@@ -22,6 +23,7 @@ const PalmReadingScreen = () => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const cameraRef = useRef<CameraView>(null);
+  const { triggerNotification } = useLocalNotification();
   const router = useRouter();
   const { showToast } = useToast();
 
@@ -31,14 +33,22 @@ const PalmReadingScreen = () => {
 
   const takePicture = async () => {
     if (!cameraRef.current || !cameraReady) {
-      showToast('Camera is not ready yet', 'warning', 4000, 'bottom');
+      triggerNotification({
+        title: '🔮 Mystic Vision Preparing',
+        body: 'Our ancient lens is awakening. Please wait a moment for perfect clarity.',
+        second: 2
+      });
       return;
     }
 
     if (isProcessing) return;
 
     setIsProcessing(true);
-    showToast('📸 Capturing your palm...', 'info', 2000);
+    triggerNotification({
+      title: '✨ Capturing Your Destiny',
+      body: 'The mystical energies of your palm are being preserved for divine analysis.',
+      second: 1
+    });
 
     try {
       const photo = await cameraRef.current.takePictureAsync({
@@ -50,15 +60,18 @@ const PalmReadingScreen = () => {
 
       // Set the captured image to display it
       setCapturedImage(`data:image/jpeg;base64,${photo.base64}`);
-      showToast('✅ Palm captured! Review and confirm.', 'success', 2000);
+      triggerNotification({
+        title: '🎉 Palm Captured Successfully!',
+        body: 'Your life\'s blueprint has been captured. Review and confirm to unlock your destiny.',
+        second: 1
+      });
     } catch (error) {
       console.error('Palm capture error:', error);
-      showToast(
-        'Failed to capture palm. Please try again.',
-        'error',
-        5000,
-        'bottom',
-      );
+      triggerNotification({
+        title: '🔄 Gentle Retry Needed',
+        body: 'The cosmic capture encountered a minor disturbance. Please try again with steady hands.',
+        second: 2
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -71,7 +84,12 @@ const PalmReadingScreen = () => {
     setIsProcessing(true);
 
     try {
-      showToast('🔮 Analyzing your palm lines...', 'info', 3000);
+      // showToast('🔮 Analyzing your palm lines...', 'info', 3000);
+      triggerNotification({
+        title: '🔮 Mystic Analysis Begins',
+        body: 'The ancient wisdom of palmistry is now deciphering your destiny. Please keep the sacred connection active.',
+        second: 2
+      });
 
       const response = await fetch('/(api)/palm/palmRead', {
         method: 'POST',
@@ -86,32 +104,35 @@ const PalmReadingScreen = () => {
       console.log('result: ', result);
 
       if (result.data) {
-        showToast('✅ Palm reading complete!', 'success', 2000);
+        triggerNotification({
+          title: '✨ Palm Reading Complete!',
+          body: 'Your destiny has been revealed! The ancient secrets of your palm are now yours to discover.',
+          second: 2
+        });
+
         setShowAnalysisModal(false);
         // Navigate to results screen with the palm reading data
         setTimeout(() => {
-          router.push({
+          router.dismissTo({
             pathname: '/palm-reading-results',
             params: { result: JSON.stringify(result.data) },
           });
         }, 500);
       } else {
-        showToast(
-          result.error || 'Failed to analyze palm reading',
-          'error',
-          5000,
-          'bottom',
-        );
+        triggerNotification({
+          title: '🌙 Mystical Interference Detected',
+          body: 'The cosmic energies encountered a temporary disturbance. Let\'s try again with fresh mystical focus.',
+          second: 2
+        });
         setShowAnalysisModal(false);
       }
     } catch (error) {
       console.error('Palm reading error:', error);
-      showToast(
-        'Failed to analyze palm. Please try again.',
-        'error',
-        5000,
-        'bottom',
-      );
+      triggerNotification({
+        title: '🔄 Sacred Retry Requested',
+        body: 'The mystical connection needs renewal. Please try capturing your palm again with divine intention.',
+        second: 2
+      });
       setShowAnalysisModal(false);
     } finally {
       setIsProcessing(false);
@@ -132,7 +153,7 @@ const PalmReadingScreen = () => {
   if (!permission) {
     return (
       <LinearGradient
-        colors={['#6366F1', '#8B5CF6'] as const}
+        colors={['#0F172A', '#1E3A8A'] as const}
         className='flex-1 justify-center items-center'
       >
         <View className='bg-white/10 rounded-2xl p-8 items-center'>
@@ -151,7 +172,7 @@ const PalmReadingScreen = () => {
   if (!permission.granted) {
     return (
       <LinearGradient
-        colors={['#6366F1', '#8B5CF6'] as const}
+        colors={['#0F172A', '#1E3A8A'] as const}
         className='flex-1 justify-center items-center px-6'
       >
         <View className='bg-white/10 rounded-3xl p-8 items-center max-w-sm'>
@@ -183,42 +204,6 @@ const PalmReadingScreen = () => {
           visible={showInstructions}
           onClose={() => setShowInstructions(false)}
         />
-
-        {/* Header */}
-        {!capturedImage && (
-          <LinearGradient
-            // colors={['#6366F1', '#8B5CF6'] as const}
-            colors={['#0F172A', '#1E3A8A']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            className='px-6 py-4 shadow-lg'
-          >
-            <View className='flex-row items-center justify-between'>
-              <TouchableOpacity
-                onPress={() => router.back()}
-                className='w-10 h-10 rounded-full bg-white/20 items-center justify-center'
-              >
-                <Text className='text-xl text-white font-bold'>←</Text>
-              </TouchableOpacity>
-
-              <View className='flex-1 items-center'>
-                <Text className='text-xl font-bold text-white text-center'>
-                  Palm Reading
-                </Text>
-                <Text className='text-sm text-white/80 text-center mt-0.5'>
-                  Capture Your Destiny
-                </Text>
-              </View>
-
-              <TouchableOpacity
-                onPress={() => setShowInstructions(true)}
-                className='w-10 h-10 rounded-full bg-white/20 items-center justify-center'
-              >
-                <Text className='text-lg text-white'>ℹ️</Text>
-              </TouchableOpacity>
-            </View>
-          </LinearGradient>
-        )}
 
         {/* Camera View or Captured Image */}
         <View className='flex-1'>
@@ -275,6 +260,26 @@ const PalmReadingScreen = () => {
               facing='back'
               onCameraReady={handleCameraReady}
             >
+              {/* Back Button */}
+              <View className='absolute top-6 left-6 z-20'>
+                <TouchableOpacity
+                  onPress={() => router.back()}
+                  className='w-12 h-12 bg-black/50 rounded-full items-center justify-center border border-white/30'
+                >
+                  <Text className='text-white text-xl font-bold'>←</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Info Button */}
+              <View className='absolute top-6 right-6 z-20'>
+                <TouchableOpacity
+                  onPress={() => setShowInstructions(true)}
+                  className='w-12 h-12 bg-black/50 rounded-full items-center justify-center border border-white/30'
+                >
+                  <Text className='text-white text-lg'>ℹ️</Text>
+                </TouchableOpacity>
+              </View>
+
               {/* Top Instructions */}
               <LinearGradient
                 colors={['rgba(0,0,0,0.7)', 'transparent'] as const}
@@ -372,7 +377,10 @@ const PalmReadingScreen = () => {
                 </View>
                 {/* Pulsing rings */}
                 <View className='absolute inset-0 rounded-full border-2 border-purple-300/50 animate-ping' />
-                <View className='absolute inset-2 rounded-full border border-blue-300/30 animate-ping' style={{ animationDelay: '0.5s' }} />
+                <View
+                  className='absolute inset-2 rounded-full border border-blue-300/30 animate-ping'
+                  style={{ animationDelay: '0.5s' }}
+                />
               </View>
 
               {/* Title with glow effect */}
@@ -388,9 +396,15 @@ const PalmReadingScreen = () => {
               {/* Progress Steps */}
               <View className='w-full mb-6 z-10'>
                 <View className='flex-row justify-between mb-3'>
-                  <Text className='text-purple-200 text-xs'>Scanning Lines</Text>
-                  <Text className='text-purple-200 text-xs'>Analyzing Mounts</Text>
-                  <Text className='text-purple-200 text-xs'>Reading Future</Text>
+                  <Text className='text-purple-200 text-xs'>
+                    Scanning Lines
+                  </Text>
+                  <Text className='text-purple-200 text-xs'>
+                    Analyzing Mounts
+                  </Text>
+                  <Text className='text-purple-200 text-xs'>
+                    Reading Future
+                  </Text>
                 </View>
                 <View className='flex-row space-x-2'>
                   <View className='flex-1 h-2 bg-purple-600/50 rounded-full overflow-hidden'>

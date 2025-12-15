@@ -1,50 +1,266 @@
-# Welcome to your Expo app 👋
+# 🌟 DhruvAI - Your Personal Vedic Astrology Companion
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+<div align="center">
 
-## Get started
+![DhruvAI Logo](assets/images/icon.png)
 
-1. Install dependencies
+**Unlock the mysteries of your destiny with AI-powered Vedic astrology insights**
 
+[![Expo](https://img.shields.io/badge/Expo-000000?style=for-the-badge&logo=expo&logoColor=white)](https://expo.dev)
+[![React Native](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactnative.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+
+</div>
+
+## ✨ About DhruvAI
+
+DhruvAI is a comprehensive mobile astrology application that combines ancient Vedic wisdom with modern AI technology. Discover your life's blueprint through personalized horoscopes, palm readings, and spiritual guidance powered by machine learning and traditional astrological calculations.
+
+## 🚀 Features
+
+### 🏠 **Home Dashboard**
+- Personalized welcome message with user's name
+- Daily horoscope insights
+- Quick access to all major features
+- Beautiful gradient backgrounds with mystical themes
+
+### 🔮 **Palm Reading**
+- **Camera Integration**: Real-time palm scanning with guided positioning
+- **AI Analysis**: Advanced image processing for palm line detection
+- **Vedic Interpretation**: Detailed analysis of life lines, heart lines, and mounts
+- **Comprehensive Reports**: Health, career, relationships, and spiritual insights
+- **Local Notifications**: Mystical progress updates during analysis
+
+### 💬 **AI Chat Assistant**
+- **Gemini AI Integration**: Powered by Google's Gemini AI
+- **Astrological Knowledge**: Context-aware responses based on birth charts
+- **Personalized Guidance**: Tailored advice using your astrological profile
+- **Real-time Conversations**: Interactive Q&A with your AI astrologer
+
+### 👤 **Profile Management**
+- **Birth Details**: Complete astrological profile setup
+- **Moon Sign Calculation**: Automatic calculation using precise astronomical data
+- **Data Privacy**: Secure local storage with Redux persist
+- **Profile Editing**: Easy profile updates and management
+
+### 🔔 **Smart Notifications**
+- **Local Notifications**: Engaging alerts for palm reading progress
+- **Permission Management**: Proper iOS/Android notification permissions
+- **Mystical Messaging**: Spiritually themed notification content
+
+### 📊 **Vedic Astrology Insights**
+- **Birth Chart Analysis**: Complete Kundali generation
+- **Planetary Positions**: Accurate astronomical calculations
+- **Zodiac Compatibility**: Relationship and compatibility analysis
+- **Vedic Remedies**: Traditional spiritual recommendations
+
+## 🛠️ Tech Stack
+
+### **Frontend**
+- **React Native 0.81.5** - Cross-platform mobile development
+- **Expo SDK 54** - Development platform and native modules
+- **TypeScript** - Type-safe JavaScript
+- **NativeWind** - Tailwind CSS for React Native
+
+### **State Management**
+- **Redux Toolkit** - Predictable state management
+- **Redux Persist** - Persistent storage
+- **Realm Database** - Local data persistence
+
+### **AI & APIs**
+- **Google Gemini AI** - Conversational AI assistant
+- **Astro Calculator** - Astronomical calculations
+- **Astronomy Engine** - Precise celestial positioning
+- **Geoapify API** - Location services for birth places
+
+### **UI/UX**
+- **Expo Linear Gradient** - Beautiful gradient backgrounds
+- **Ionicons** - Consistent iconography
+- **React Native Gifted Chat** - Chat interface
+- **React Native Reanimated** - Smooth animations
+
+## 📱 Screenshots
+
+<div align="center">
+
+### Home Screen
+*Personalized dashboard with daily insights*
+
+### Palm Reading
+*Camera-guided palm scanning with AI analysis*
+
+### AI Chat
+*Intelligent astrology conversations*
+
+### Profile Management
+*Complete birth chart setup*
+
+</div>
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js (v18 or higher)
+- npm or yarn
+- Expo CLI
+- iOS Simulator or Android Emulator
+
+### Installation
+
+1. **Clone the repository**
    ```bash
-   npm install
+   git clone https://github.com/yourusername/dhruvai.git
+   cd dhruvai
    ```
 
-2. Start the app
+2. **Install dependencies**
+   ```bash
+   npm install
+   # or
+   yarn install
+   ```
 
+3. **Set up environment variables**
+
+   Create a `.env` file in the root directory:
+   ```env
+   EXPO_PUBLIC_GEMINI_GENERATE_URL=https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent
+   EXPO_PUBLIC_GEMINI_API_KEY=your_gemini_api_key_here
+   EXPO_PUBLIC_GET_KUNDALI=https://api.vedicastroapi.com/v3-json/horoscope/full-report
+   ```
+
+4. **Start the development server**
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+5. **Run on device/simulator**
+   - **iOS**: Press `i` in the terminal or scan QR code with Camera app
+   - **Android**: Press `a` in the terminal or scan QR code with Expo Go
+   - **Web**: Press `w` in the terminal
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 📋 API Keys Setup
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### Google Gemini AI
+1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Create a new API key
+3. Add it to your `.env` file
 
-## Get a fresh project
+### Vedic Astro API (Optional)
+1. Sign up at [Vedic Astro API](https://vedicastroapi.com)
+2. Get your API key
+3. Add it to your `.env` file
 
-When you're ready, run:
+## 🏗️ Project Structure
 
-```bash
-npm run reset-project
+```
+dhruvAI/
+├── app/                    # Expo Router app directory
+│   ├── (tabs)/            # Tab navigation screens
+│   │   ├── home.tsx       # Home dashboard
+│   │   ├── chat.tsx       # AI chat interface
+│   │   └── profile.tsx    # User profile management
+│   ├── palm-reading.tsx   # Palm scanning interface
+│   └── palm-reading-results.tsx # Analysis results
+├── components/            # Reusable UI components
+│   ├── DailyHoroScope.tsx # Daily horoscope card
+│   ├── PalmReadCard.tsx   # Palm reading feature card
+│   └── AskMeAnything.tsx  # AI chat feature card
+├── hooks/                 # Custom React hooks
+│   ├── useKundali.ts     # Kundali data management
+│   └── useLocalNotification.ts # Notification handling
+├── lib/                   # Utility libraries
+│   └── astrology/         # Astrology calculations
+├── store/                 # Redux store configuration
+├── realm/                 # Database schemas
+└── services/             # API integrations
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 🎯 Key Components
 
-## Learn more
+### **Palm Reading Flow**
+1. **Permission Request** → Camera access for palm scanning
+2. **Guided Capture** → Real-time positioning with golden frame overlay
+3. **AI Processing** → Image analysis and line detection
+4. **Vedic Interpretation** → Traditional astrological analysis
+5. **Comprehensive Report** → Detailed insights across multiple life areas
 
-To learn more about developing your project with Expo, look at the following resources:
+### **AI Chat System**
+- **Context Awareness**: Uses birth chart data for personalized responses
+- **Multi-turn Conversations**: Maintains conversation history
+- **Astrological Knowledge**: Trained on Vedic astrology principles
+- **Fallback Handling**: Graceful error management
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### **Notification System**
+- **Progress Updates**: Mystical messages during palm analysis
+- **Permission Handling**: Proper iOS/Android notification setup
+- **Themed Content**: Spiritually resonant notification text
 
-## Join the community
+## 🔧 Development
 
-Join our community of developers creating universal apps.
+### **Available Scripts**
+```bash
+npm start          # Start Expo development server
+npm run android    # Run on Android emulator
+npm run ios        # Run on iOS simulator
+npm run web        # Run in web browser
+npm run lint       # Run ESLint
+npm run reset-project # Reset to fresh Expo project
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### **Building for Production**
+```bash
+# Build for EAS (Expo Application Services)
+npx eas build --platform android
+npx eas build --platform ios
+
+# Submit to app stores
+npx eas submit --platform android
+npx eas submit --platform ios
+```
+
+## 🤝 Contributing
+
+We welcome contributions to DhruvAI! Here's how you can help:
+
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
+3. **Commit your changes**: `git commit -m 'Add amazing feature'`
+4. **Push to the branch**: `git push origin feature/amazing-feature`
+5. **Open a Pull Request**
+
+### **Development Guidelines**
+- Follow TypeScript best practices
+- Use meaningful commit messages
+- Test on both iOS and Android
+- Ensure accessibility compliance
+- Maintain code quality with ESLint
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **Vedic Astrology Community** - For preserving ancient wisdom
+- **Google AI** - For Gemini AI capabilities
+- **Expo Team** - For the amazing development platform
+- **React Native Community** - For continuous innovation
+
+## 📞 Support
+
+For questions, bug reports, or feature requests:
+
+- **GitHub Issues**: [Create an issue](https://github.com/yourusername/dhruvai/issues)
+- **Email**: support@dhruvai.com
+- **Documentation**: [Full API docs](https://docs.dhruvai.com)
+
+---
+
+<div align="center">
+
+**Made with ❤️ for astrology enthusiasts worldwide**
+
+⭐ Star this repo if you find it helpful!
+
+</div>
